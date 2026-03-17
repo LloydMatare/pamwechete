@@ -4,8 +4,12 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
+import '../global.css';
 
 import { useColorScheme } from '@/components/useColorScheme';
+import GeoLockWrapper from '@/components/GeoLockWrapper';
+import { ConvexClientProvider } from '@/components/ConvexClientProvider';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -20,10 +24,15 @@ export const unstable_settings = {
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
+import { useRouter, useSegments } from 'expo-router';
+
 export default function RootLayout() {
   const [loaded, error] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
+
+  const segments = useSegments();
+  const router = useRouter();
 
   // Expo Router uses Error Boundaries to catch errors in the navigation tree.
   useEffect(() => {
@@ -31,10 +40,21 @@ export default function RootLayout() {
   }, [error]);
 
   useEffect(() => {
-    if (loaded) {
+    if (loaded && segments.length > 0) {
       SplashScreen.hideAsync();
+      checkOnboarding();
     }
-  }, [loaded]);
+  }, [loaded, segments]);
+
+  const checkOnboarding = async () => {
+    const completed = await AsyncStorage.getItem('onboarding_completed');
+    // segment[0] can be '(tabs)' or 'onboarding'
+    const isInsideTabs = segments[0] === '(tabs)';
+    
+    if (completed !== 'true' && isInsideTabs) {
+      router.replace('/onboarding');
+    }
+  };
 
   if (!loaded) {
     return null;
@@ -47,11 +67,15 @@ function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-      </Stack>
-    </ThemeProvider>
+    <ConvexClientProvider>
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <GeoLockWrapper>
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+          </Stack>
+        </GeoLockWrapper>
+      </ThemeProvider>
+    </ConvexClientProvider>
   );
 }
