@@ -63,19 +63,24 @@ export default function RootLayout() {
   return <RootLayoutNav />;
 }
 
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
   return (
-    <ConvexClientProvider>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <GeoLockWrapper>
-          <Stack>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-          </Stack>
-        </GeoLockWrapper>
-      </ThemeProvider>
-    </ConvexClientProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ConvexClientProvider>
+        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+          <GeoLockWrapper>
+            <Stack>
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+              <Stack.Screen name="chat/[id]" options={{ presentation: 'modal', headerShown: false }} />
+            </Stack>
+          </GeoLockWrapper>
+        </ThemeProvider>
+      </ConvexClientProvider>
+    </GestureHandlerRootView>
   );
 }

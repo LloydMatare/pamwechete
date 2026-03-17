@@ -208,7 +208,7 @@ export default function OnboardingScreen() {
         storageId = data.storageId;
       }
 
-      await createUser({
+      const userId = await createUser({
         phoneNumber: "+263" + Math.floor(Math.random() * 100000000), // Placeholder for now
         name: form.name,
         email: form.email,
@@ -220,6 +220,7 @@ export default function OnboardingScreen() {
         lng: 31.0335,
       });
 
+      await AsyncStorage.setItem('user_id', userId);
       await AsyncStorage.setItem('onboarding_completed', 'true');
       router.replace('/(tabs)');
     } catch (error: any) {
@@ -248,7 +249,8 @@ export default function OnboardingScreen() {
   return (
     <View className="flex-1 bg-white">
       <View className="pt-16 pb-2 px-6 bg-white">
-        <Text className="text-3xl font-bold text-black text-gray-400 text-base">Trade anything, anytime.</Text>
+        <Text className="text-3xl font-bold text-black tracking-tight">Pamwechete</Text>
+        <Text className="text-gray-400 text-base">Trade anything, anytime.</Text>
       </View>
       <TabView
         navigationState={{ index, routes }}

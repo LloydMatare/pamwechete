@@ -50,15 +50,51 @@ export const create = mutation({
   },
 });
 
-export const getLatest = query({
-  args: { limit: v.number() },
+export const getItems = query({
+  args: { 
+    limit: v.number(),
+    searchQuery: v.optional(v.string()),
+    category: v.optional(v.string()),
+  },
   handler: async (ctx, args) => {
-    return await ctx.db
-      .query("items")
-      .order("desc")
-      .take(args.limit);
+    let itemsQuery = ctx.db.query("items");
+    
+    if (args.category) {
+      itemsQuery = itemsQuery.filter(q => q.eq(q.field("category"), args.category));
+    }
+
+    const items = await itemsQuery.order("desc").take(args.limit);
+
+    if (args.searchQuery) {
+      const query = args.searchQuery.toLowerCase();
+      return items.filter(item => 
+        item.title.toLowerCase().includes(query) || 
+        item.description.toLowerCase().includes(query)
+      );
+    }
+
+    return items;
   },
 });
+
+export const getByUser = query({
+  args: { userId: v.optional(v.id("users")) },
+  handler: async (ctx, args) => {
+    if (!args.userId) return [];
+    return await ctx.db
+      .query("items")
+      .withIndex("by_owner", (q) => q.eq("ownerId", args.userId!))
+      .collect();
+  },
+});
+
+export const get = query({
+  args: { id: v.id("items") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.id);
+  },
+});
+
 export const seed = mutation({
   args: {},
   handler: async (ctx) => {

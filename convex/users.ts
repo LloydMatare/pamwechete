@@ -48,3 +48,11 @@ export const create = mutation({
     return userId;
   },
 });
+
+export const get = query({
+  args: { id: v.optional(v.id("users")) },
+  handler: async (ctx, args) => {
+    if (!args.id) return null;
+    return await ctx.db.get(args.id);
+  },
+});
