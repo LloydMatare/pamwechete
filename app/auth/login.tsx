@@ -1,29 +1,28 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useAuthActions } from "@convex-dev/auth/react";
 
 export default function LoginScreen() {
-  const [phoneNumber, setPhoneNumber] = useState('+263');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
   const { signIn } = useAuthActions();
 
   const handleLogin = async () => {
-    // Basic Zimbabwe phone validation
-    const zimPhoneRegex = /^\+2637\d{8}$/;
-    if (!zimPhoneRegex.test(phoneNumber)) {
-      Alert.alert('Invalid Phone Number', 'Please enter a valid Zimbabwean phone number (e.g., +263771234567)');
+    if (!email || !password) {
+      Alert.alert('Error', 'Please enter both email and password.');
       return;
     }
 
-    setLoading(false);
-    // In a real scenario, this would trigger the phone OTP flow
-    // For now, we'll simulate or use the provider
+    setLoading(true);
     try {
-        setLoading(true);
-        // await signIn("phone", { phone: phoneNumber });
-        Alert.alert('Login', 'Phone secondary auth is being configured. Please verify terminal logs.');
-    } catch (error) {
-        Alert.alert('Error', 'Failed to sign in');
+        await signIn("password", { email, password, flow: "signIn" });
+        router.replace('/(tabs)');
+    } catch (error: any) {
+        console.error(error);
+        Alert.alert('Login Failed', error.message || 'Invalid email or password.');
     } finally {
         setLoading(false);
     }
@@ -34,26 +33,47 @@ export default function LoginScreen() {
       <Text className="text-3xl font-bold mb-2">Pamwechete</Text>
       <Text className="text-gray-500 mb-8">Peer-to-peer barter trading in Zimbabwe</Text>
 
-      <Text className="text-sm font-semibold text-gray-700 mb-2">Phone Number</Text>
+      <Text className="text-sm font-semibold text-gray-700 mb-2 uppercase tracking-widest">Email Address</Text>
       <TextInput
-        className="border border-gray-300 rounded-lg p-4 mb-6"
-        value={phoneNumber}
-        onChangeText={setPhoneNumber}
-        placeholder="+2637..."
-        keyboardType="phone-pad"
+        className="border border-gray-200 rounded-2xl p-4 mb-6 bg-gray-50"
+        value={email}
+        onChangeText={setEmail}
+        placeholder="e.g. john@example.com"
+        keyboardType="email-address"
+        autoCapitalize="none"
+      />
+
+      <Text className="text-sm font-semibold text-gray-700 mb-2 uppercase tracking-widest">Password</Text>
+      <TextInput
+        className="border border-gray-200 rounded-2xl p-4 mb-8 bg-gray-50"
+        value={password}
+        onChangeText={setPassword}
+        placeholder="••••••••"
+        secureTextEntry
       />
 
       <TouchableOpacity 
         onPress={handleLogin}
         disabled={loading}
-        className={`bg-black p-4 rounded-lg items-center ${loading ? 'opacity-50' : ''}`}
+        className={`bg-primary p-5 rounded-2xl items-center shadow-lg shadow-primary/30 ${loading ? 'opacity-50' : ''}`}
       >
-        <Text className="text-white font-bold text-lg">
-          {loading ? 'Processing...' : 'Verify Number'}
-        </Text>
+        {loading ? (
+            <ActivityIndicator color="white" />
+        ) : (
+            <Text className="text-white font-bold text-lg">Sign In</Text>
+        )}
       </TouchableOpacity>
       
-      <Text className="mt-6 text-center text-gray-400 text-xs">
+      <TouchableOpacity 
+        onPress={() => router.push('/onboarding')}
+        className="mt-6 py-2 items-center"
+      >
+        <Text className="text-gray-500 text-base">
+          Don't have an account? <Text className="text-primary font-bold">Register</Text>
+        </Text>
+      </TouchableOpacity>
+
+      <Text className="mt-12 text-center text-gray-400 text-xs">
         By continuing, you agree to our Terms of Service and Privacy Policy.
       </Text>
     </View>

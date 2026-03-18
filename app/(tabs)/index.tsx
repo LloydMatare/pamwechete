@@ -18,14 +18,8 @@ const CATEGORIES = [
 export default function TabOneScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [userId, setUserId] = useState<Id<"users"> | null>(null);
   const router = useRouter();
-
-  useEffect(() => {
-    AsyncStorage.getItem('user_id').then((id) => {
-      if (id) setUserId(id as Id<"users">);
-    });
-  }, []);
+  const user = useQuery(api.users.current);
 
   const items = useQuery(api.items.getItems, {
     limit: 10,
@@ -52,15 +46,15 @@ export default function TabOneScreen() {
   };
 
   const handleProposeTrade = async (targetItem: any) => {
-    if (!userId) {
+    if (!user) {
        router.replace('/onboarding');
        return;
     }
-    if (targetItem.ownerId === userId) return;
+    if (targetItem.ownerId === user._id) return;
 
     try {
         const tradeId = await createTrade({
-            initiatorId: userId,
+            initiatorId: user._id,
             receiverId: targetItem.ownerId,
             initiatorItems: [], 
             receiverItems: [targetItem._id],

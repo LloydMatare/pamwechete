@@ -3,7 +3,6 @@ import { View, Text, ActivityIndicator, TouchableOpacity, StyleSheet, Dimensions
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { Id } from '../../convex/_generated/dataModel';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -20,26 +19,20 @@ const SWIPE_THRESHOLD = width * 0.3;
 
 export default function ExploreScreen() {
   const router = useRouter();
-  const [userId, setUserId] = useState<Id<"users"> | null>(null);
+  const user = useQuery(api.users.current);
   const [currentIndex, setCurrentIndex] = useState(0);
-
-  useEffect(() => {
-    AsyncStorage.getItem('user_id').then((id) => {
-      if (id) setUserId(id as Id<"users">);
-    });
-  }, []);
 
   const items = useQuery(api.items.getItems, { limit: 50 });
   const createTrade = useMutation(api.trades.create);
   
   const translateX = useSharedValue(0);
 
-  const filteredItems = items?.filter(item => item.ownerId !== userId) || [];
+  const filteredItems = items?.filter(item => item.ownerId !== user?._id) || [];
   const currentItems = filteredItems.slice(currentIndex, currentIndex + 5);
 
   const handleSwipeComplete = (direction: 'left' | 'right') => {
     const item = currentItems[0];
-    if (direction === 'right' && item && userId) {
+    if (direction === 'right' && item && user) {
       proposeTrade(item);
     }
     
@@ -48,9 +41,13 @@ export default function ExploreScreen() {
   };
 
   const proposeTrade = async (targetItem: any) => {
+    if (!user) {
+      router.replace('/onboarding');
+      return;
+    }
     try {
       const tradeId = await createTrade({
-        initiatorId: userId!,
+        initiatorId: user._id,
         receiverId: targetItem.ownerId,
         initiatorItems: [],
         receiverItems: [targetItem._id],
@@ -115,8 +112,6 @@ export default function ExploreScreen() {
       <GestureDetector gesture={gesture}>
         <View style={styles.container}>
           {currentItems.reverse().map((item, index) => {
-            // Because we reversed it for rendering order, the actual index of the top card is currentItems.length - 1
-            // But for animation logic, we want the top card to be index 0
             const animIndex = currentItems.length - 1 - index;
             return (
               <ExploreCard 

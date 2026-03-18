@@ -4,37 +4,33 @@ import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { Id } from '../../convex/_generated/dataModel';
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useRouter } from 'expo-router';
 
 export default function AccountScreen() {
   const router = useRouter();
-  const [userId, setUserId] = useState<Id<"users"> | null>(null);
+  const user = useQuery(api.users.current);
+  const userItems = useQuery(api.items.getByUser, { userId: user?._id });
   const seed = useMutation(api.items.seed);
 
-  useEffect(() => {
-    AsyncStorage.getItem('user_id').then((id) => {
-      if (id) setUserId(id as Id<"users">);
-    });
-  }, []);
-
-  const user = useQuery(api.users.get, { id: userId || undefined });
-  const userItems = useQuery(api.items.getByUser, { userId: userId || undefined });
-
-  if (!user) {
+  if (user === undefined) {
     return (
       <View className="flex-1 items-center justify-center p-6 bg-white">
         <ActivityIndicator size="large" color="#FF4C29" />
         <Text className="mt-4 text-gray-500">Loading your profile...</Text>
+      </View>
+    );
+  }
+
+  if (user === null) {
+    return (
+      <View className="flex-1 items-center justify-center p-6 bg-white">
+        <Text className="text-gray-500 text-center">Please complete onboarding to view your profile.</Text>
         <TouchableOpacity 
-          onPress={async () => {
-            await AsyncStorage.removeItem('onboarding_completed');
-            await AsyncStorage.removeItem('user_id');
-            alert("Reset complete. Restart the app.");
-          }}
-          className="mt-10 border border-red-500 p-4 rounded-xl w-full items-center"
+          onPress={() => router.replace('/onboarding')}
+          className="mt-6 bg-primary px-8 py-3 rounded-xl"
         >
-          <Text className="text-red-500 font-bold">Reset All Data (Dev)</Text>
+          <Text className="text-white font-bold">Go to Onboarding</Text>
         </TouchableOpacity>
       </View>
     );
@@ -46,20 +42,20 @@ export default function AccountScreen() {
       <View className="pt-16 pb-8 px-6 bg-[#FF4C29]">
         <View className="flex-row items-center">
           <View className="w-20 h-20 rounded-full bg-white/20 items-center justify-center border-4 border-white/30 overflow-hidden">
-            {user.profile.avatar ? (
+            {user.profile?.avatar ? (
               <Image source={{ uri: user.profile.avatar }} className="w-full h-full" />
             ) : (
               <Ionicons name="person" size={40} color="white" />
             )}
           </View>
           <View className="ml-4 flex-1">
-            <Text className="text-2xl font-bold text-white tracking-tight">{user.profile.name}</Text>
-            <Text className="text-white/80 text-base">{user.profile.email || user.phoneNumber}</Text>
+            <Text className="text-2xl font-bold text-white tracking-tight">{user.profile?.name || 'User'}</Text>
+            <Text className="text-white/80 text-base">{user.email || user.phone}</Text>
             <View className="flex-row items-center mt-1">
               <View className="bg-white/20 px-2 py-0.5 rounded-md mr-2">
                 <Text className="text-white text-xs font-bold uppercase">{user.verificationLevel}</Text>
               </View>
-              <Text className="text-white/80 text-xs">Member since {new Date(user.profile.memberSince).getFullYear()}</Text>
+              <Text className="text-white/80 text-xs">Member since {user.profile ? new Date(user.profile.memberSince).getFullYear() : 'N/A'}</Text>
             </View>
           </View>
           <TouchableOpacity className="p-2 bg-white/20 rounded-xl">
@@ -70,12 +66,12 @@ export default function AccountScreen() {
         {/* Stats */}
         <View className="flex-row justify-between mt-8 bg-white/10 rounded-3xl p-6">
           <View className="items-center flex-1">
-            <Text className="text-white font-bold text-xl">{user.profile.tradesCompleted}</Text>
+            <Text className="text-white font-bold text-xl">{user.profile?.tradesCompleted || 0}</Text>
             <Text className="text-white/60 text-xs font-semibold uppercase mt-1">Trades</Text>
           </View>
           <View className="w-[1] bg-white/20 h-full" />
           <View className="items-center flex-1">
-            <Text className="text-white font-bold text-xl">{user.profile.rating}</Text>
+            <Text className="text-white font-bold text-xl">{user.profile?.rating || 0}</Text>
             <View className="flex-row items-center mt-1">
               <Ionicons name="star" size={12} color="white" />
               <Text className="text-white/60 text-xs font-semibold uppercase ml-0.5">Rating</Text>
@@ -108,7 +104,7 @@ export default function AccountScreen() {
             {userItems?.map((item) => (
               <TouchableOpacity 
                 key={item._id} 
-                onPress={() => router.push(`/listing/${item._id}`)}
+                onPress={() => router.push({ pathname: '/edit-listing/[id]', params: { id: item._id } } as any)}
                 className="mr-4 p-4 border border-gray-100 rounded-3xl w-48 bg-white shadow-sm"
               >
                 <Image 
@@ -141,7 +137,7 @@ export default function AccountScreen() {
             {[
               { icon: 'wallet-outline', label: 'Trade Balance', value: '450 TP' },
               { icon: 'shield-checkmark-outline', label: 'Verification Status', value: user.verificationLevel },
-              { icon: 'location-outline', label: 'Delivery Address', value: user.location.city }
+              { icon: 'location-outline', label: 'Delivery Address', value: user.location?.city || 'N/A' }
             ].map((link, i) => (
               <TouchableOpacity key={i} className="flex-row items-center justify-between py-5 border-b border-gray-50">
                 <View className="flex-row items-center">
@@ -168,12 +164,11 @@ export default function AccountScreen() {
             <TouchableOpacity 
               onPress={async () => {
                 await AsyncStorage.removeItem('onboarding_completed');
-                await AsyncStorage.removeItem('user_id');
                 alert("Reset complete. Please restart.");
               }}
               className="mt-4 border border-red-500 p-5 rounded-2xl items-center"
             >
-              <Text className="text-red-500 font-bold text-lg">Logout & Reset (Dev)</Text>
+              <Text className="text-red-500 font-bold text-lg">Reset Onboarding (Dev)</Text>
             </TouchableOpacity>
           </View>
         </View>

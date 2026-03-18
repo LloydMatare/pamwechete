@@ -1,19 +1,25 @@
 import { defineSchema, defineTable } from "convex/server";
+import { authTables } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 
 export default defineSchema({
+  ...authTables,
   users: defineTable({
-    phoneNumber: v.string(),
-    verified: v.boolean(),
-    location: v.object({
+    name: v.optional(v.string()),
+    image: v.optional(v.string()),
+    email: v.optional(v.string()),
+    phone: v.optional(v.string()),
+    // Custom fields from legacy users table
+    verified: v.optional(v.boolean()),
+    location: v.optional(v.object({
       city: v.string(),
       province: v.string(),
       coordinates: v.object({
         lat: v.number(),
         lng: v.number(),
       }),
-    }),
-    profile: v.object({
+    })),
+    profile: v.optional(v.object({
       name: v.string(),
       email: v.optional(v.string()),
       avatar: v.optional(v.string()),
@@ -21,12 +27,11 @@ export default defineSchema({
       memberSince: v.number(),
       rating: v.number(),
       tradesCompleted: v.number(),
-    }),
-    password: v.optional(v.string()), // For demo/initial auth
+    })),
     nationalIdImage: v.optional(v.string()), // StorageId
-    verificationLevel: v.union(v.literal("basic"), v.literal("verified"), v.literal("premium")),
-    geolocked: v.boolean(),
-  }).index("by_phoneNumber", ["phoneNumber"]),
+    verificationLevel: v.optional(v.union(v.literal("basic"), v.literal("verified"), v.literal("premium"))),
+    geolocked: v.optional(v.boolean()),
+  }).index("email", ["email"]),
 
   items: defineTable({
     ownerId: v.id("users"),

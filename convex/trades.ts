@@ -1,5 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { auth as convexAuth } from "./auth";
 
 export const create = mutation({
   args: {
@@ -35,23 +36,24 @@ export const create = mutation({
 export const getForUser = query({
   args: { userId: v.optional(v.id("users")) },
   handler: async (ctx, args) => {
-    if (!args.userId) return [];
+    const userId = args.userId ?? (await convexAuth.getUserId(ctx));
+    if (!userId) return [];
     
     const initiated = await ctx.db
       .query("trades")
-      .withIndex("by_initiator", (q) => q.eq("initiatorId", args.userId!))
+      .withIndex("by_initiator", (q) => q.eq("initiatorId", userId))
       .collect();
       
     const received = await ctx.db
       .query("trades")
-      .withIndex("by_receiver", (q) => q.eq("receiverId", args.userId!))
+      .withIndex("by_receiver", (q) => q.eq("receiverId", userId))
       .collect();
 
     // Map and fetch user details for each trade
     const allTrades = [...initiated, ...received].sort((a, b) => (b.completedAt || 0) - (a.completedAt || 0));
     
     return Promise.all(allTrades.map(async (trade) => {
-      const otherUserId = trade.initiatorId === args.userId ? trade.receiverId : trade.initiatorId;
+      const otherUserId = trade.initiatorId === userId ? trade.receiverId : trade.initiatorId;
       const otherUser = await ctx.db.get(otherUserId);
       return { ...trade, otherUser };
     }));

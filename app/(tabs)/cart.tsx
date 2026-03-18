@@ -9,25 +9,22 @@ import { useRouter } from 'expo-router';
 
 export default function CartScreen() {
   const router = useRouter();
-  const [userId, setUserId] = useState<Id<"users"> | null>(null);
+  const user = useQuery(api.users.current);
   const [cartItemIds, setCartItemIds] = useState<string[]>([]);
   const [selectedOfferItems, setSelectedOfferItems] = useState<Id<"items">[]>([]);
 
-  // Load user and cart on mount
+  // Load cart on mount
   useEffect(() => {
     const init = async () => {
-      const id = await AsyncStorage.getItem('user_id');
-      if (id) setUserId(id as Id<"users">);
-      
       const cartData = await AsyncStorage.getItem('trade_cart');
       if (cartData) setCartItemIds(JSON.parse(cartData));
     };
     init();
   }, []);
 
-  // Fetch all items from cart (Note: This is a bit inefficient to fetch all, but works for MVP)
+  // Fetch all items from cart
   const allItems = useQuery(api.items.getItems, { limit: 100 });
-  const myItems = useQuery(api.items.getByUser, { userId: userId || undefined });
+  const myItems = useQuery(api.items.getByUser, { userId: user?._id });
   const createTrade = useMutation(api.trades.create);
 
   const cartItems = useMemo(() => {
@@ -39,8 +36,6 @@ export default function CartScreen() {
   const groups = useMemo(() => {
     const g: Record<string, { owner: any, items: any[] }> = {};
     cartItems.forEach(item => {
-      // We don't have owner info in getItems, so we'll just group by ownerId for now
-      // This is a limitation of the current getItems query
       const oid = item.ownerId;
       if (!g[oid]) g[oid] = { owner: { id: oid }, items: [] };
       g[oid].items.push(item);
@@ -55,11 +50,14 @@ export default function CartScreen() {
   };
 
   const handleCreateTrade = async (receiverId: Id<"users">, receiverItems: Id<"items">[]) => {
-    if (!userId) return;
+    if (!user) {
+      router.replace('/onboarding');
+      return;
+    }
     
     try {
       const tradeId = await createTrade({
-        initiatorId: userId,
+        initiatorId: user._id,
         receiverId,
         initiatorItems: selectedOfferItems,
         receiverItems,

@@ -1,17 +1,26 @@
-import { useMutation } from 'convex/react';
-import * as ImagePicker from 'expo-image-picker';
-import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Image, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { api } from '../convex/_generated/api';
+import { useQuery, useMutation } from 'convex/react';
+import { api } from '../../convex/_generated/api';
+import { Id } from '../../convex/_generated/dataModel';
+import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system/legacy';
 
 const CONDITIONS = ['New', 'Like New', 'Good', 'Fair'];
 const CATEGORIES = ['Agriculture', 'Electronics', 'Clothing', 'Livestock', 'Home', 'Services'];
 
-export default function CreateListingScreen() {
+export default function EditListingScreen() {
+  const { id } = useLocalSearchParams();
+  const itemId = id as Id<"items">;
   const router = useRouter();
+  
+  const item = useQuery(api.items.get, { id: itemId });
+  const updateListing = useMutation(api.items.update);
+  const removeListing = useMutation(api.items.remove);
+  const generateUploadUrl = useMutation(api.files.generateUploadUrl);
+
   const [images, setImages] = useState<string[]>([]);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -21,6 +30,18 @@ export default function CreateListingScreen() {
   const [estimatedValue, setEstimatedValue] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+
+  useEffect(() => {
+    if (item) {
+      setTitle(item.title);
+      setDescription(item.description);
+      setCategory(item.category);
+      setCondition(item.condition);
+      setWants(item.wants.join(', '));
+      setEstimatedValue(item.estimatedValue?.toString() || '');
+      setImages(item.images);
+    }
+  }, [item]);
 
   const pickImage = async () => {
     if (images.length >= 5) {
@@ -43,10 +64,7 @@ export default function CreateListingScreen() {
     setImages(images.filter((_, i) => i !== index));
   };
 
-  const generateUploadUrl = useMutation(api.files.generateUploadUrl);
-  const createListing = useMutation(api.items.create);
-
-  const handleSubmit = async () => {
+  const handleUpdate = async () => {
     setSubmitted(true);
     if (!title || !category || !condition) {
       Alert.alert('Error', 'Please fill in all required fields.');
@@ -58,10 +76,15 @@ export default function CreateListingScreen() {
       const storageIds = [];
 
       for (const imageUri of images) {
+        if (imageUri.startsWith('http')) {
+          storageIds.push(imageUri);
+          continue;
+        }
+
         // 1. Get upload URL
         const postUrl = await generateUploadUrl();
 
-        // 2. Upload image using native FileSystem.uploadAsync for maximum reliability
+        // 2. Upload image using native FileSystem.uploadAsync
         const uploadResult = await FileSystem.uploadAsync(postUrl, imageUri, {
           httpMethod: 'POST',
           uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
@@ -79,8 +102,8 @@ export default function CreateListingScreen() {
         storageIds.push(storageId);
       }
 
-      // 3. Create Listing
-      await createListing({
+      await updateListing({
+        id: itemId,
         title,
         description,
         category,
@@ -88,62 +111,88 @@ export default function CreateListingScreen() {
         images: storageIds,
         estimatedValue: parseFloat(estimatedValue) || 0,
         wants: wants.split(',').map(s => s.trim()).filter(s => s.length > 0),
-        location: {
-          city: "Harare", 
-          coordinates: { lat: -17.8252, lng: 31.0335 }, 
-          displayPrecise: false,
-        }
       });
 
-      Alert.alert('Success', 'Item listed successfully!');
+      Alert.alert('Success', 'Listing updated successfully!');
       router.back();
     } catch (error) {
       console.error(error);
-      Alert.alert('Error', 'Failed to list item. Please check your network.');
+      Alert.alert('Error', 'Failed to update listing. Please check your network.');
     } finally {
       setLoading(false);
     }
   };
 
+  const handleDelete = () => {
+    Alert.alert(
+      "Delete Listing",
+      "Are you sure you want to delete this listing? This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Delete", 
+          style: "destructive", 
+          onPress: async () => {
+            try {
+              await removeListing({ id: itemId });
+              router.back();
+            } catch (e) {
+              alert("Error deleting listing");
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  if (!item) {
+    return (
+      <View className="flex-1 items-center justify-center bg-white">
+        <ActivityIndicator color="#FF4C29" />
+      </View>
+    );
+  }
+
   return (
     <View style={{ flex: 1, backgroundColor: 'white' }}>
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <View className="pt-14 pb-4 px-6 flex-row items-center border-b border-gray-50">
-          <TouchableOpacity onPress={() => router.back()} className="mr-4 w-10 h-10 bg-gray-50 rounded-xl items-center justify-center">
-            <Ionicons name="chevron-back" size={24} color="black" />
+        <View className="pt-14 pb-4 px-6 flex-row items-center justify-between border-b border-gray-50">
+          <View className="flex-row items-center">
+              <TouchableOpacity onPress={() => router.back()} className="mr-4 w-10 h-10 bg-gray-50 rounded-xl items-center justify-center">
+                  <Ionicons name="chevron-back" size={24} color="black" />
+              </TouchableOpacity>
+              <Text className="text-2xl font-bold">Edit Listing</Text>
+          </View>
+          <TouchableOpacity onPress={handleDelete} className="w-10 h-10 bg-red-50 rounded-xl items-center justify-center">
+              <Ionicons name="trash-outline" size={20} color="#EF4444" />
           </TouchableOpacity>
-          <Text className="text-2xl font-bold">List an Item</Text>
         </View>
 
         <View className="p-6">
-          {/* Image Picker */}
-          <View className="mb-6">
-            <Text className="text-sm font-semibold text-gray-700 mb-2">Images (Max 5)</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row gap-2">
-              {images.map((uri, index) => (
-                <View key={index} className="relative">
-                  <Image source={{ uri }} className="w-24 h-24 rounded-lg" />
-                  <TouchableOpacity
-                    onPress={() => removeImage(index)}
-                    className="absolute -top-2 -right-2 bg-red-500 rounded-full w-6 h-6 items-center justify-center border-2 border-white"
-                  >
-                    <Ionicons name="close" size={12} color="white" />
-                  </TouchableOpacity>
-                </View>
-              ))}
-              {images.length < 5 && (
+          <Text className="text-sm font-semibold text-gray-700 mb-2">Images (Max 5)</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row gap-2 mb-6">
+            {images.map((uri, index) => (
+              <View key={index} className="relative">
+                <Image source={{ uri }} className="w-24 h-24 rounded-lg" />
                 <TouchableOpacity
-                  onPress={pickImage}
-                  className="w-24 h-24 bg-gray-50 rounded-lg items-center justify-center border-2 border-dashed border-gray-200"
+                  onPress={() => removeImage(index)}
+                  className="absolute -top-2 -right-2 bg-red-500 rounded-full w-6 h-6 items-center justify-center border-2 border-white"
                 >
-                  <Ionicons name="add" size={32} color="#ABB3BB" />
+                  <Ionicons name="close" size={12} color="white" />
                 </TouchableOpacity>
-              )}
-            </ScrollView>
-          </View>
+              </View>
+            ))}
+            {images.length < 5 && (
+              <TouchableOpacity
+                onPress={pickImage}
+                className="w-24 h-24 bg-gray-50 rounded-lg items-center justify-center border-2 border-dashed border-gray-200"
+              >
+                <Ionicons name="add" size={32} color="#ABB3BB" />
+              </TouchableOpacity>
+            )}
+          </ScrollView>
 
-          {/* Details */}
           <Text className="text-sm font-semibold text-gray-700 mb-2">Title *</Text>
           <TextInput
             className={`border rounded-lg p-3 mb-4 ${submitted && !title ? 'border-red-500 bg-red-50' : 'border-gray-200'}`}
@@ -212,10 +261,10 @@ export default function CreateListingScreen() {
         </View>
       </ScrollView>
 
-      {/* Floating Action Button */}
+      {/* Floating Save Button */}
       <View className="absolute bottom-10 left-6 right-6">
         <TouchableOpacity
-          onPress={handleSubmit}
+          onPress={handleUpdate}
           disabled={loading}
           className={`bg-primary p-5 rounded-2xl flex-row items-center justify-center shadow-lg shadow-primary/30 ${loading ? 'opacity-50' : ''}`}
         >
@@ -223,8 +272,8 @@ export default function CreateListingScreen() {
             <ActivityIndicator color="white" />
           ) : (
             <>
-              <Ionicons name="sparkles" size={20} color="white" className="mr-2" />
-              <Text className="text-white font-bold text-lg">List Item</Text>
+              <Ionicons name="save-outline" size={20} color="white" className="mr-2" />
+              <Text className="text-white font-bold text-lg">Save Changes</Text>
             </>
           )}
         </TouchableOpacity>

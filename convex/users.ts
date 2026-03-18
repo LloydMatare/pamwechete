@@ -1,31 +1,51 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { auth } from "./auth";
 
-export const getByPhoneNumber = query({
-  args: { phoneNumber: v.string() },
+/**
+ * Gets a user by their ID.
+ */
+export const get = query({
+  args: { id: v.optional(v.id("users")) },
   handler: async (ctx, args) => {
-    return await ctx.db
-      .query("users")
-      .withIndex("by_phoneNumber", (q) => q.eq("phoneNumber", args.phoneNumber))
-      .unique();
+    if (!args.id) return null;
+    return await ctx.db.get(args.id);
   },
 });
 
-export const create = mutation({
+/**
+ * Gets the current authenticated user's profile.
+ */
+export const current = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await auth.getUserId(ctx);
+    if (userId === null) return null;
+    return await ctx.db.get(userId);
+  },
+});
+
+/**
+ * Updates the current authenticated user's profile data after registration.
+ */
+export const updateProfile = mutation({
   args: {
-    phoneNumber: v.string(),
     name: v.string(),
     city: v.string(),
     province: v.string(),
     lat: v.number(),
     lng: v.number(),
     email: v.optional(v.string()),
-    password: v.optional(v.string()),
     nationalIdImage: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await ctx.db.insert("users", {
-      phoneNumber: args.phoneNumber,
+    const userId = await auth.getUserId(ctx);
+    if (userId === null) {
+      throw new Error("Not authenticated");
+    }
+
+    await ctx.db.patch(userId, {
+      name: args.name,
       verified: true,
       location: {
         city: args.city,
@@ -40,19 +60,9 @@ export const create = mutation({
         rating: 5,
         tradesCompleted: 0,
       },
-      password: args.password,
       nationalIdImage: args.nationalIdImage,
-      verificationLevel: "verified", // Assume verified if they uploaded ID for this demo
+      verificationLevel: "verified",
       geolocked: true,
     });
-    return userId;
-  },
-});
-
-export const get = query({
-  args: { id: v.optional(v.id("users")) },
-  handler: async (ctx, args) => {
-    if (!args.id) return null;
-    return await ctx.db.get(args.id);
   },
 });

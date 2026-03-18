@@ -4,7 +4,6 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { Id } from '../../convex/_generated/dataModel';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function ChatScreen() {
@@ -13,31 +12,25 @@ export default function ChatScreen() {
   const router = useRouter();
   const scrollViewRef = useRef<ScrollView>(null);
   
-  const [userId, setUserId] = useState<Id<"users"> | null>(null);
   const [message, setMessage] = useState('');
 
+  const user = useQuery(api.users.current);
   const trade = useQuery(api.trades.get, { id: tradeId });
   const messages = useQuery(api.messages.getByTrade, { tradeId });
   const sendMessage = useMutation(api.messages.send);
   const updateStatus = useMutation(api.trades.updateStatus);
 
-  useEffect(() => {
-    AsyncStorage.getItem('user_id').then((id) => {
-      if (id) setUserId(id as Id<"users">);
-    });
-  }, []);
-
   const handleSend = async () => {
-    if (!message.trim() || !userId) return;
+    if (!message.trim() || !user) return;
     await sendMessage({
       tradeId,
-      senderId: userId,
+      senderId: user._id,
       content: message,
     });
     setMessage('');
   };
 
-  if (!trade || !messages || !userId) {
+  if (user === undefined || !trade || !messages) {
     return (
       <View className="flex-1 items-center justify-center bg-white">
         <ActivityIndicator color="#FF4C29" />
@@ -45,8 +38,16 @@ export default function ChatScreen() {
     );
   }
 
-  const otherUser = trade.initiatorId === userId ? trade.receiver : trade.initiator;
-  const isInitiator = trade.initiatorId === userId;
+  if (user === null) {
+    return (
+      <View className="flex-1 items-center justify-center bg-white">
+        <Text>Please sign in to view this chat.</Text>
+      </View>
+    );
+  }
+
+  const otherUser = trade.initiatorId === user._id ? trade.receiver : trade.initiator;
+  const isInitiator = trade.initiatorId === user._id;
 
   return (
     <KeyboardAvoidingView 
@@ -59,14 +60,14 @@ export default function ChatScreen() {
           <Ionicons name="arrow-back" size={24} color="black" />
         </TouchableOpacity>
         <View className="w-10 h-10 rounded-full bg-gray-100 overflow-hidden mr-3">
-          {otherUser?.profile.avatar ? (
+          {otherUser?.profile?.avatar ? (
              <Image source={{ uri: otherUser.profile.avatar }} className="w-full h-full" />
           ) : (
             <View className="items-center justify-center flex-1"><Ionicons name="person" size={20} color="#7C7C7C" /></View>
           )}
         </View>
         <View className="flex-1">
-          <Text className="text-lg font-bold">{otherUser?.profile.name}</Text>
+          <Text className="text-lg font-bold">{otherUser?.profile?.name || "User"}</Text>
           <Text className="text-xs text-secondary font-bold uppercase">{trade.status}</Text>
         </View>
         <TouchableOpacity className="p-2">
@@ -133,19 +134,19 @@ export default function ChatScreen() {
         {messages.map((msg: any) => (
           <View 
             key={msg._id} 
-            className={`mb-4 flex-row ${msg.senderId === userId ? 'justify-end' : 'justify-start'}`}
+            className={`mb-4 flex-row ${msg.senderId === user._id ? 'justify-end' : 'justify-start'}`}
           >
             <View 
               className={`max-w-[80%] px-5 py-3 rounded-2xl ${
-                msg.senderId === userId 
+                msg.senderId === user._id 
                   ? 'bg-primary rounded-tr-none' 
                   : 'bg-gray-100 rounded-tl-none'
               }`}
             >
-              <Text className={`text-base ${msg.senderId === userId ? 'text-white' : 'text-gray-800'}`}>
+              <Text className={`text-base ${msg.senderId === user._id ? 'text-white' : 'text-gray-800'}`}>
                 {msg.content}
               </Text>
-              <Text className={`text-[10px] mt-1 ${msg.senderId === userId ? 'text-white/60' : 'text-gray-400'}`}>
+              <Text className={`text-[10px] mt-1 ${msg.senderId === user._id ? 'text-white/60' : 'text-gray-400'}`}>
                 {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </Text>
             </View>

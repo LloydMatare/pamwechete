@@ -1,5 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { auth } from "./auth";
 
 export const create = mutation({
   args: {
@@ -20,19 +21,14 @@ export const create = mutation({
     }),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+    const userId = await auth.getUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
 
-    // Fetch user id from phoneNumber or subject
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_phoneNumber", (q) => q.eq("phoneNumber", identity.phoneNumber!))
-      .unique();
-
+    const user = await ctx.db.get(userId);
     if (!user) throw new Error("User not found");
 
     const itemId = await ctx.db.insert("items", {
-      ownerId: user._id,
+      ownerId: userId,
       title: args.title,
       description: args.description,
       category: args.category,
@@ -63,27 +59,34 @@ export const getItems = query({
       itemsQuery = itemsQuery.filter(q => q.eq(q.field("category"), args.category));
     }
 
+    const userId = await auth.getUserId(ctx);
     const items = await itemsQuery.order("desc").take(args.limit);
+    
+    // Filter out user's own items if they are logged in
+    const filteredItems = userId 
+      ? items.filter(item => item.ownerId !== userId)
+      : items;
 
     if (args.searchQuery) {
       const query = args.searchQuery.toLowerCase();
-      return items.filter(item => 
+      return filteredItems.filter(item => 
         item.title.toLowerCase().includes(query) || 
         item.description.toLowerCase().includes(query)
       );
     }
 
-    return items;
+    return filteredItems;
   },
 });
 
 export const getByUser = query({
   args: { userId: v.optional(v.id("users")) },
   handler: async (ctx, args) => {
-    if (!args.userId) return [];
+    const userId = args.userId ?? (await auth.getUserId(ctx));
+    if (!userId) return [];
     return await ctx.db
       .query("items")
-      .withIndex("by_owner", (q) => q.eq("ownerId", args.userId!))
+      .withIndex("by_owner", (q) => q.eq("ownerId", userId))
       .collect();
   },
 });
@@ -158,5 +161,50 @@ export const seed = mutation({
     }
 
     return "Seeding successful!";
+  },
+});
+
+export const update = mutation({
+  args: {
+    id: v.id("items"),
+    title: v.string(),
+    description: v.string(),
+    category: v.string(),
+    images: v.array(v.string()),
+    condition: v.string(),
+    estimatedValue: v.optional(v.number()),
+    wants: v.array(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const item = await ctx.db.get(args.id);
+    if (!item) throw new Error("Item not found");
+    if (item.ownerId !== userId) throw new Error("Not authorized");
+
+    await ctx.db.patch(args.id, {
+      title: args.title,
+      description: args.description,
+      category: args.category,
+      images: args.images,
+      condition: args.condition,
+      wants: args.wants,
+      estimatedValue: args.estimatedValue,
+    });
+  },
+});
+
+export const remove = mutation({
+  args: { id: v.id("items") },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const item = await ctx.db.get(args.id);
+    if (!item) throw new Error("Item not found");
+    if (item.ownerId !== userId) throw new Error("Not authorized");
+
+    await ctx.db.delete(args.id);
   },
 });

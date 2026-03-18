@@ -75,6 +75,11 @@ function RootLayoutNav() {
           <GeoLockWrapper>
             <Stack>
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+              <Stack.Screen name="auth/login" options={{ headerShown: false }} />
+              <Stack.Screen name="create-listing" options={{ headerShown: false }} />
+              <Stack.Screen name="listing/[id]" options={{ headerShown: false }} />
+              <Stack.Screen name="edit-listing/[id]" options={{ headerShown: false }} />
               <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
               <Stack.Screen name="chat/[id]" options={{ presentation: 'modal', headerShown: false }} />
             </Stack>

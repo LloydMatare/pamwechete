@@ -9,17 +9,18 @@ import { Id } from '../../convex/_generated/dataModel';
 
 export default function InboxScreen() {
   const router = useRouter();
-  const [userId, setUserId] = useState<Id<"users"> | null>(null);
+  const user = useQuery(api.users.current);
+  const trades = useQuery(api.trades.getForUser, { userId: user?._id });
 
-  useEffect(() => {
-    AsyncStorage.getItem('user_id').then((id) => {
-      if (id) setUserId(id as Id<"users">);
-    });
-  }, []);
+  if (user === undefined) {
+    return (
+      <View className="flex-1 items-center justify-center p-6 bg-white">
+        <ActivityIndicator color="#FF4C29" />
+      </View>
+    );
+  }
 
-  const trades = useQuery(api.trades.getForUser, { userId: userId || undefined });
-
-  if (!userId) {
+  if (user === null) {
     return (
       <View className="flex-1 items-center justify-center p-6 bg-white">
         <Text className="text-gray-500 text-center">Please complete onboarding to view your messages.</Text>

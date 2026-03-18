@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useQuery } from 'convex/react';
+import { useQuery, useMutation } from 'convex/react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React from 'react';
+import React, { useState } from 'react';
 import { ActivityIndicator, Image, ScrollView, Text, TouchableOpacity, View, Dimensions, Alert } from 'react-native';
 import { api } from '../../convex/_generated/api';
 import { Id } from '../../convex/_generated/dataModel';
@@ -12,9 +12,39 @@ export default function ListingDetailScreen() {
   const { id } = useLocalSearchParams();
   const itemId = id as Id<"items">;
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
 
+  const user = useQuery(api.users.current);
   const item = useQuery(api.items.get, { id: itemId });
+  const createTrade = useMutation(api.trades.create);
   
+  const handleProposeTrade = async () => {
+    if (!user) {
+      router.replace('/onboarding');
+      return;
+    }
+    if (!item) return;
+    if (item.ownerId === user._id) {
+      Alert.alert("Error", "You cannot trade with yourself.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const tradeId = await createTrade({
+        initiatorId: user._id,
+        receiverId: item.ownerId,
+        initiatorItems: [],
+        receiverItems: [item._id],
+      });
+      router.push(`/chat/${tradeId}`);
+    } catch (e: any) {
+      Alert.alert("Error", e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!item) {
     return (
       <View className="flex-1 items-center justify-center bg-white">
@@ -52,12 +82,12 @@ export default function ListingDetailScreen() {
         <View className="absolute top-12 left-6 right-6 flex-row justify-between">
           <TouchableOpacity 
             onPress={() => router.back()}
-            className="w-12 h-12 bg-white/80 rounded-2xl items-center justify-center"
+            className="w-12 h-12 bg-white/80 rounded-2xl items-center justify-center shadow-sm"
           >
             <Ionicons name="arrow-back" size={24} color="black" />
           </TouchableOpacity>
           <TouchableOpacity 
-            className="w-12 h-12 bg-white/80 rounded-2xl items-center justify-center"
+            className="w-12 h-12 bg-white/80 rounded-2xl items-center justify-center shadow-sm"
           >
             <Ionicons name="heart-outline" size={24} color="black" />
           </TouchableOpacity>
@@ -117,17 +147,25 @@ export default function ListingDetailScreen() {
 
       {/* Sticky Bottom Propose Button */}
       <View className="absolute bottom-0 left-0 right-0 p-8 bg-white border-t border-gray-50 flex-row gap-4">
-        <TouchableOpacity className="w-16 h-16 bg-gray-50 rounded-2xl items-center justify-center border border-gray-100">
+        <TouchableOpacity 
+          onPress={handleProposeTrade}
+          className="w-16 h-16 bg-gray-50 rounded-2xl items-center justify-center border border-gray-100"
+        >
            <Ionicons name="chatbubble-outline" size={24} color="#7C7C7C" />
         </TouchableOpacity>
         <TouchableOpacity 
           className="flex-1 bg-primary rounded-2xl h-16 flex-row items-center justify-center shadow-lg shadow-primary/30"
-          onPress={() => {
-            Alert.alert("Feature coming soon", "Trade initiation from detail screen.");
-          }}
+          onPress={handleProposeTrade}
+          disabled={loading}
         >
-          <Ionicons name="swap-horizontal" size={20} color="white" />
-          <Text className="text-white font-bold text-lg ml-2">Propose Trade</Text>
+          {loading ? (
+            <ActivityIndicator color="white" />
+          ) : (
+            <>
+              <Ionicons name="swap-horizontal" size={20} color="white" />
+              <Text className="text-white font-bold text-lg ml-2">Propose Trade</Text>
+            </>
+          )}
         </TouchableOpacity>
       </View>
     </View>

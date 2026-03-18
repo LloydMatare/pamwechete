@@ -10,8 +10,8 @@
 
 import type * as auth from "../auth.js";
 import type * as files from "../files.js";
+import type * as http from "../http.js";
 import type * as items from "../items.js";
-import type * as message from "../message.js";
 import type * as messages from "../messages.js";
 import type * as trades from "../trades.js";
 import type * as users from "../users.js";
@@ -25,8 +25,8 @@ import type {
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   files: typeof files;
+  http: typeof http;
   items: typeof items;
-  message: typeof message;
   messages: typeof messages;
   trades: typeof trades;
   users: typeof users;
