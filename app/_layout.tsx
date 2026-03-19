@@ -28,7 +28,7 @@ import { useRouter, useSegments } from 'expo-router';
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+    // Using system fonts for a neutral look
   });
 
   const segments = useSegments();
@@ -40,11 +40,11 @@ export default function RootLayout() {
   }, [error]);
 
   useEffect(() => {
-    if (loaded && segments.length > 0) {
+    if (segments.length > 0) {
       SplashScreen.hideAsync();
       checkOnboarding();
     }
-  }, [loaded, segments]);
+  }, [segments]);
 
   const checkOnboarding = async () => {
     const completed = await AsyncStorage.getItem('onboarding_completed');

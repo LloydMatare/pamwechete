@@ -161,23 +161,27 @@ export default function AccountScreen() {
               </TouchableOpacity>
             ))}
 
-            <TouchableOpacity 
-              onPress={() => seed({})}
-              className="mt-10 bg-black p-5 rounded-2xl items-center flex-row justify-center"
-            >
-              <Ionicons name="beaker-outline" size={20} color="white" className="mr-2" />
-              <Text className="text-white font-bold text-lg">Seed Sample Trade Data</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              onPress={async () => {
-                await AsyncStorage.removeItem('onboarding_completed');
-                alert("Reset complete. Please restart.");
-              }}
-              className="mt-4 border border-red-500 p-5 rounded-2xl items-center"
-            >
-              <Text className="text-red-500 font-bold text-lg">Reset Onboarding (Dev)</Text>
-            </TouchableOpacity>
+            {user.email === 'lloydsmatare@gmail.com' && (
+              <>
+                <TouchableOpacity 
+                  onPress={() => seed({})}
+                  className="mt-10 bg-black p-5 rounded-2xl items-center flex-row justify-center"
+                >
+                  <Ionicons name="beaker-outline" size={20} color="white" className="mr-2" />
+                  <Text className="text-white font-bold text-lg">Seed Sample Trade Data</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  onPress={async () => {
+                    await AsyncStorage.removeItem('onboarding_completed');
+                    alert("Reset complete. Please restart.");
+                  }}
+                  className="mt-4 border border-red-500 p-5 rounded-2xl items-center"
+                >
+                  <Text className="text-red-500 font-bold text-lg">Reset Onboarding (Dev)</Text>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
         </View>
       </View>

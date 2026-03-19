@@ -2,10 +2,11 @@ import { useMutation } from 'convex/react';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { ActivityIndicator, Alert, Image, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, ScrollView, Text, TextInput, TouchableOpacity, View, KeyboardAvoidingView, Platform } from 'react-native';
 import { api } from '../convex/_generated/api';
 import { Ionicons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system/legacy';
+import CustomModal from '@/components/CustomModal';
 
 const CONDITIONS = ['New', 'Like New', 'Good', 'Fair'];
 const CATEGORIES = ['Agriculture', 'Electronics', 'Clothing', 'Livestock', 'Home', 'Services'];
@@ -21,6 +22,10 @@ export default function CreateListingScreen() {
   const [estimatedValue, setEstimatedValue] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalTitle, setModalTitle] = useState('');
+  const [modalMessage, setModalMessage] = useState('');
+  const [modalType, setModalType] = useState<'success' | 'error' | 'info'>('info');
 
   const pickImage = async () => {
     if (images.length >= 5) {
@@ -49,7 +54,10 @@ export default function CreateListingScreen() {
   const handleSubmit = async () => {
     setSubmitted(true);
     if (!title || !category || !condition) {
-      Alert.alert('Error', 'Please fill in all required fields.');
+      setModalTitle('Missing Fields');
+      setModalMessage('Please fill in all required fields marked with *');
+      setModalType('error');
+      setModalVisible(true);
       return;
     }
 
@@ -95,18 +103,30 @@ export default function CreateListingScreen() {
         }
       });
 
-      Alert.alert('Success', 'Item listed successfully!');
-      router.back();
+      setModalTitle('Success');
+      setModalMessage('Your item has been listed successfully!');
+      setModalType('success');
+      setModalVisible(true);
+      setTimeout(() => {
+        setModalVisible(false);
+        router.back();
+      }, 1500);
     } catch (error) {
       console.error(error);
-      Alert.alert('Error', 'Failed to list item. Please check your network.');
+      setModalTitle('Upload Error');
+      setModalMessage('Failed to list item. Please check your network.');
+      setModalType('error');
+      setModalVisible(true);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: 'white' }}>
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={{ flex: 1, backgroundColor: 'white' }}
+    >
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View className="pt-14 pb-4 px-6 flex-row items-center border-b border-gray-50">
@@ -229,6 +249,13 @@ export default function CreateListingScreen() {
           )}
         </TouchableOpacity>
       </View>
-    </View>
+      <CustomModal 
+        visible={modalVisible}
+        title={modalTitle}
+        message={modalMessage}
+        type={modalType}
+        onClose={() => setModalVisible(false)}
+      />
+    </KeyboardAvoidingView>
   );
 }

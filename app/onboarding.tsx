@@ -4,10 +4,11 @@ import { useMutation } from 'convex/react';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { ActivityIndicator, Alert, Image, ScrollView, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, ScrollView, Text, TextInput, TouchableOpacity, useWindowDimensions, View, Platform, KeyboardAvoidingView } from 'react-native';
 import { TabBar, TabView } from 'react-native-tab-view';
 import { api } from '../convex/_generated/api';
 import { useAuthActions } from "@convex-dev/auth/react";
+import CustomModal from '@/components/CustomModal';
 
 // Step 1: Profile Details (Name, Email, City)
 const ProfileRoute = ({ form, setForm, next }: any) => {
@@ -70,7 +71,7 @@ const SecurityRoute = ({ form, setForm, next }: any) => {
 
       <Text className="text-sm font-semibold text-gray-400 mb-2 uppercase tracking-widest">Password</Text>
       <TextInput
-        className="border-b border-gray-200 p-3 mb-10 text-lg"
+        className="border-b border-gray-200 p-3 mb-10 text-lg text-black"
         placeholder="••••••••"
         secureTextEntry
         value={form.password}
@@ -184,6 +185,11 @@ export default function OnboardingScreen() {
   const [loading, setLoading] = useState(false);
   const { signIn } = useAuthActions();
 
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalTitle, setModalTitle] = useState('');
+  const [modalMessage, setModalMessage] = useState('');
+  const [modalType, setModalType] = useState<'success' | 'error' | 'info'>('info');
+
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -206,7 +212,10 @@ export default function OnboardingScreen() {
 
   const handleFinish = async () => {
     if (!form.name || !form.email || !form.password || !form.city) {
-      Alert.alert('Error', 'Please fill in all required fields (Name, Email, Password, and City).');
+      setModalTitle('Missing Details');
+      setModalMessage('Please fill in all required fields (Name, Email, Password, and City).');
+      setModalType('error');
+      setModalVisible(true);
       return;
     }
 
@@ -244,7 +253,10 @@ export default function OnboardingScreen() {
       router.replace('/(tabs)');
     } catch (error: any) {
       console.error(error);
-      Alert.alert('Error', error.message || 'Failed to complete onboarding.');
+      setModalTitle('Registration Failed');
+      setModalMessage('Could not complete registration. Please try again.');
+      setModalType('error');
+      setModalVisible(true);
     } finally {
       setLoading(false);
     }
@@ -266,7 +278,10 @@ export default function OnboardingScreen() {
   };
 
   return (
-    <View className="flex-1 bg-white">
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
+      className="flex-1 bg-white"
+    >
       <View className="pt-16 pb-2 px-6 bg-white flex-row justify-between items-end">
         <View className="flex-row items-center">
           <Image 
@@ -303,6 +318,13 @@ export default function OnboardingScreen() {
           />
         )}
       />
-    </View>
+      <CustomModal 
+        visible={modalVisible}
+        title={modalTitle}
+        message={modalMessage}
+        type={modalType}
+        onClose={() => setModalVisible(false)}
+      />
+    </KeyboardAvoidingView>
   );
 }

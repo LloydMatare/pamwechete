@@ -34,6 +34,7 @@ export const create = mutation({
       category: args.category,
       images: args.images,
       condition: args.condition,
+      estimatedValue: args.estimatedValue,
       wants: args.wants,
       tags: [], // Will be populated by AI in Phase 3
       location: args.location,
