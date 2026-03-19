@@ -40,6 +40,14 @@ export default function AccountScreen() {
     <ScrollView className="flex-1 bg-white" showsVerticalScrollIndicator={false}>
       {/* Profile Header */}
       <View className="pt-16 pb-8 px-6 bg-[#FF4C29]">
+        <View className="flex-row justify-between mb-4">
+          <Image 
+            source={require('../../assets/images/icon.png')} 
+            className="w-10 h-10 bg-white/20 rounded-xl"
+            style={{ tintColor: 'white' }}
+            resizeMode="contain"
+          />
+        </View>
         <View className="flex-row items-center">
           <View className="w-20 h-20 rounded-full bg-white/20 items-center justify-center border-4 border-white/30 overflow-hidden">
             {user.profile?.avatar ? (

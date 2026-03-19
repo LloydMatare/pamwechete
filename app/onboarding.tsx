@@ -268,9 +268,16 @@ export default function OnboardingScreen() {
   return (
     <View className="flex-1 bg-white">
       <View className="pt-16 pb-2 px-6 bg-white flex-row justify-between items-end">
-        <View>
-          <Text className="text-3xl font-bold text-black tracking-tight">Pamwechete</Text>
-          <Text className="text-gray-400 text-base">Trade anything, anytime.</Text>
+        <View className="flex-row items-center">
+          <Image 
+            source={require('../assets/images/icon.png')} 
+            className="w-12 h-12 mr-3 rounded-xl"
+            resizeMode="contain"
+          />
+          <View>
+            <Text className="text-3xl font-bold text-black tracking-tight">Pamwechete</Text>
+            <Text className="text-gray-400 text-base">Trade anything, anytime.</Text>
+          </View>
         </View>
         <TouchableOpacity
           onPress={() => router.push('/auth/login')}

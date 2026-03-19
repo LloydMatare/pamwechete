@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthActions } from "@convex-dev/auth/react";
 
@@ -30,6 +30,11 @@ export default function LoginScreen() {
 
   return (
     <View className="flex-1 bg-white p-6 justify-center">
+      <Image 
+        source={require('../../assets/images/icon.png')} 
+        className="w-20 h-20 mb-6 rounded-2xl"
+        resizeMode="contain"
+      />
       <Text className="text-3xl font-bold mb-2">Pamwechete</Text>
       <Text className="text-gray-500 mb-8">Peer-to-peer barter trading in Zimbabwe</Text>
 

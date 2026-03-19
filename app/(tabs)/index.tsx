@@ -68,9 +68,17 @@ export default function TabOneScreen() {
   return (
     <ScrollView className="flex-1 bg-white" showsVerticalScrollIndicator={false}>
       {/* Header */}
-      <View className="pt-14 pb-4 px-6 items-center">
-        <Ionicons name="location" size={20} color="#FF4C29" />
-        <Text className="text-lg font-bold">Harare, Zimbabwe</Text>
+      <View className="pt-14 pb-4 px-6 flex-row items-center justify-between">
+        <Image 
+          source={require('../../assets/images/icon.png')} 
+          className="w-10 h-10 rounded-xl"
+          resizeMode="contain"
+        />
+        <View className="flex-row items-center">
+          <Ionicons name="location" size={20} color="#FF4C29" />
+          <Text className="text-lg font-bold ml-1">Harare, Zimbabwe</Text>
+        </View>
+        <View className="w-10" /> 
       </View>
 
       {/* Search Bar */}
