@@ -4,6 +4,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import '../global.css';
 
 import { useColorScheme } from '@/components/useColorScheme';
@@ -71,20 +72,22 @@ function RootLayoutNav() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ConvexClientProvider>
-        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <GeoLockWrapper>
-            <Stack>
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-              <Stack.Screen name="auth/login" options={{ headerShown: false }} />
-              <Stack.Screen name="create-listing" options={{ headerShown: false }} />
-              <Stack.Screen name="listing/[id]" options={{ headerShown: false }} />
-              <Stack.Screen name="edit-listing/[id]" options={{ headerShown: false }} />
-              <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-              <Stack.Screen name="chat/[id]" options={{ presentation: 'modal', headerShown: false }} />
-            </Stack>
-          </GeoLockWrapper>
-        </ThemeProvider>
+        <KeyboardProvider>
+          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+            <GeoLockWrapper>
+              <Stack>
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+                <Stack.Screen name="auth/login" options={{ headerShown: false }} />
+                <Stack.Screen name="create-listing" options={{ headerShown: false }} />
+                <Stack.Screen name="listing/[id]" options={{ headerShown: false }} />
+                <Stack.Screen name="edit-listing/[id]" options={{ headerShown: false }} />
+                <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+                <Stack.Screen name="chat/[id]" options={{ presentation: 'modal', headerShown: false }} />
+              </Stack>
+            </GeoLockWrapper>
+          </ThemeProvider>
+        </KeyboardProvider>
       </ConvexClientProvider>
     </GestureHandlerRootView>
   );

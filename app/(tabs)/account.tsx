@@ -3,15 +3,21 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
-import { Id } from '../../convex/_generated/dataModel';
+
 import React from 'react';
 import { useRouter } from 'expo-router';
+import { useAuthActions } from "@convex-dev/auth/react";
 
 export default function AccountScreen() {
   const router = useRouter();
   const user = useQuery(api.users.current);
   const userItems = useQuery(api.items.getByUser, { userId: user?._id });
   const seed = useMutation(api.items.seed);
+  const { signOut } = useAuthActions();
+  const handleLogout = async () => {
+    await signOut();
+    router.replace('/auth/login');
+  };
 
   if (user === undefined) {
     return (
@@ -115,11 +121,13 @@ export default function AccountScreen() {
                 onPress={() => router.push({ pathname: '/edit-listing/[id]', params: { id: item._id } } as any)}
                 className="mr-4 p-4 border border-gray-100 rounded-3xl w-48 bg-white shadow-sm"
               >
-                <Image 
-                   source={{ uri: item.images[0]?.startsWith('http') ? item.images[0] : (item.images[0] ? `https://placehold.co/400x400` : 'https://placehold.co/400x400') }} 
-                   className="w-full h-32 rounded-2xl mb-3" 
-                   resizeMode="cover" 
-                />
+                <View className="w-full h-32 bg-gray-50 rounded-2xl mb-3 items-center justify-center overflow-hidden p-2">
+                  <Image 
+                     source={{ uri: item.images[0]?.startsWith('http') ? item.images[0] : (item.images[0] ? `https://placehold.co/400x400` : 'https://placehold.co/400x400') }} 
+                     className="w-full h-full" 
+                     resizeMode="contain" 
+                  />
+                </View>
                 <Text className="font-bold text-lg" numberOfLines={1}>{item.title}</Text>
                 <Text className="text-gray-400 text-sm mb-2">{item.category}</Text>
                 <View className="bg-primary/5 p-2 rounded-xl">
@@ -160,6 +168,20 @@ export default function AccountScreen() {
                 </View>
               </TouchableOpacity>
             ))}
+
+            {/* Log Out */}
+            <TouchableOpacity
+              onPress={handleLogout}
+              className="flex-row items-center justify-between py-5 border-b border-gray-50"
+            >
+              <View className="flex-row items-center">
+                <View className="w-10 h-10 bg-red-50 rounded-xl items-center justify-center mr-4">
+                  <Ionicons name="log-out-outline" size={20} color="#EF4444" />
+                </View>
+                <Text className="text-lg font-semibold text-red-500">Log Out</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#ABB3BB" />
+            </TouchableOpacity>
 
             {user.email === 'lloydsmatare@gmail.com' && (
               <>

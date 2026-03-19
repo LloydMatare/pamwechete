@@ -4,11 +4,12 @@ import { useMutation } from 'convex/react';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { ActivityIndicator, Alert, Image, ScrollView, Text, TextInput, TouchableOpacity, useWindowDimensions, View, Platform, KeyboardAvoidingView } from 'react-native';
+import { ActivityIndicator, Alert, Image, ScrollView, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { TabBar, TabView } from 'react-native-tab-view';
 import { api } from '../convex/_generated/api';
 import { useAuthActions } from "@convex-dev/auth/react";
 import CustomModal from '@/components/CustomModal';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
 // Step 1: Profile Details (Name, Email, City)
 const ProfileRoute = ({ form, setForm, next }: any) => {
@@ -278,9 +279,10 @@ export default function OnboardingScreen() {
   };
 
   return (
-    <KeyboardAvoidingView 
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
-      className="flex-1 bg-white"
+    <KeyboardAwareScrollView
+      bottomOffset={24}
+      style={{ flex: 1, backgroundColor: 'white' }}
+      scrollEnabled={false}
     >
       <View className="pt-16 pb-2 px-6 bg-white flex-row justify-between items-end">
         <View className="flex-row items-center">
@@ -325,6 +327,6 @@ export default function OnboardingScreen() {
         type={modalType}
         onClose={() => setModalVisible(false)}
       />
-    </KeyboardAvoidingView>
+    </KeyboardAwareScrollView>
   );
 }

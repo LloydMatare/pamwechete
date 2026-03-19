@@ -133,11 +133,11 @@ export default function TabOneScreen() {
               onPress={() => router.push(`/listing/${item._id}`)}
               className="mr-4 p-4 border border-gray-100 rounded-3xl w-44"
             >
-              <View className="items-center mb-3">
+              <View className="items-center justify-center mb-3 w-full h-28 bg-gray-50 rounded-2xl overflow-hidden p-2">
                 <Image
                   source={{ uri: item.images[0]?.startsWith('http') ? item.images[0] : 'https://placehold.co/400x400/png?text=Item' }}
-                  className="w-24 h-24 rounded-2xl"
-                  resizeMode="cover"
+                  className="w-full h-full"
+                  resizeMode="contain"
                 />
               </View>
               <Text className="font-bold text-lg" numberOfLines={1}>{item.title}</Text>

@@ -73,11 +73,11 @@ export default function ExploreCard({ item, index, translateX, totalCards }: Exp
 
   return (
     <Animated.View style={[styles.card, cardStyle]} className="shadow-2xl">
-      <View className="flex-1 rounded-[40px] overflow-hidden bg-white border border-gray-100">
+      <View className="flex-1 rounded-[40px] overflow-hidden bg-gray-50 border border-gray-100 justify-center">
         <Image 
           source={{ uri: item.images[0]?.startsWith('http') ? item.images[0] : 'https://placehold.co/600x800' }} 
-          className="flex-1"
-          resizeMode="cover"
+          className="w-full h-full"
+          resizeMode="contain"
         />
         
         {/* Overlays */}

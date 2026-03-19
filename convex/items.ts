@@ -1,5 +1,5 @@
-import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { mutation, query } from "./_generated/server";
 import { auth } from "./auth";
 
 export const create = mutation({
@@ -27,12 +27,20 @@ export const create = mutation({
     const user = await ctx.db.get(userId);
     if (!user) throw new Error("User not found");
 
+    const imageUrls = await Promise.all(
+      args.images.map(async (imageId) => {
+        if (imageId.startsWith("http")) return imageId;
+        const url = await ctx.storage.getUrl(imageId);
+        return url ?? imageId;
+      })
+    );
+
     const itemId = await ctx.db.insert("items", {
       ownerId: userId,
       title: args.title,
       description: args.description,
       category: args.category,
-      images: args.images,
+      images: imageUrls,
       condition: args.condition,
       estimatedValue: args.estimatedValue,
       wants: args.wants,
@@ -48,30 +56,30 @@ export const create = mutation({
 });
 
 export const getItems = query({
-  args: { 
+  args: {
     limit: v.number(),
     searchQuery: v.optional(v.string()),
     category: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     let itemsQuery = ctx.db.query("items");
-    
+
     if (args.category) {
       itemsQuery = itemsQuery.filter(q => q.eq(q.field("category"), args.category));
     }
 
     const userId = await auth.getUserId(ctx);
     const items = await itemsQuery.order("desc").take(args.limit);
-    
+
     // Filter out user's own items if they are logged in
-    const filteredItems = userId 
+    const filteredItems = userId
       ? items.filter(item => item.ownerId !== userId)
       : items;
 
     if (args.searchQuery) {
       const query = args.searchQuery.toLowerCase();
-      return filteredItems.filter(item => 
-        item.title.toLowerCase().includes(query) || 
+      return filteredItems.filter(item =>
+        item.title.toLowerCase().includes(query) ||
         item.description.toLowerCase().includes(query)
       );
     }
@@ -184,11 +192,19 @@ export const update = mutation({
     if (!item) throw new Error("Item not found");
     if (item.ownerId !== userId) throw new Error("Not authorized");
 
+    const imageUrls = await Promise.all(
+      args.images.map(async (imageId) => {
+        if (imageId.startsWith("http")) return imageId;
+        const url = await ctx.storage.getUrl(imageId);
+        return url ?? imageId;
+      })
+    );
+
     await ctx.db.patch(args.id, {
       title: args.title,
       description: args.description,
       category: args.category,
-      images: args.images,
+      images: imageUrls,
       condition: args.condition,
       wants: args.wants,
       estimatedValue: args.estimatedValue,

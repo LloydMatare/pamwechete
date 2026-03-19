@@ -64,12 +64,13 @@ export default function ListingDetailScreen() {
           className="h-[400px]"
         >
           {item.images.map((img: string, index: number) => (
-            <Image 
-              key={index}
-              source={{ uri: img }}
-              style={{ width, height: 400 }}
-              resizeMode="cover"
-            />
+            <View key={index} style={{ width, height: 400 }} className="bg-gray-100 items-center justify-center">
+              <Image 
+                source={{ uri: img }}
+                style={{ width: '100%', height: '100%' }}
+                resizeMode="contain"
+              />
+            </View>
           ))}
           {item.images.length === 0 && (
             <View style={{ width, height: 400 }} className="bg-gray-100 items-center justify-center">

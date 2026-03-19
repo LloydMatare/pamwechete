@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, ScrollView, TextInput, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { Id } from '../../convex/_generated/dataModel';
 import { Ionicons } from '@expo/vector-icons';
+import { KeyboardStickyView } from 'react-native-keyboard-controller';
 
 export default function ChatScreen() {
   const { id } = useLocalSearchParams();
@@ -50,10 +51,7 @@ export default function ChatScreen() {
   const isInitiator = trade.initiatorId === user._id;
 
   return (
-    <KeyboardAvoidingView 
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
-      className="flex-1 bg-white"
-    >
+    <View style={{ flex: 1, backgroundColor: 'white' }}>
       {/* Header */}
       <View className="pt-14 pb-4 px-6 flex-row items-center border-b border-gray-50">
         <TouchableOpacity onPress={() => router.back()} className="mr-4">
@@ -63,7 +61,9 @@ export default function ChatScreen() {
           {otherUser?.profile?.avatar ? (
              <Image source={{ uri: otherUser.profile.avatar }} className="w-full h-full" />
           ) : (
-            <View className="items-center justify-center flex-1"><Ionicons name="person" size={20} color="#7C7C7C" /></View>
+            <View className="items-center justify-center flex-1">
+              <Ionicons name="person" size={20} color="#7C7C7C" />
+            </View>
           )}
         </View>
         <View className="flex-1">
@@ -78,37 +78,38 @@ export default function ChatScreen() {
       {/* Trade Summary Bar */}
       <View className="bg-gray-50 px-6 py-3 flex-row items-center justify-between">
         <View className="flex-row items-center">
-            <Ionicons name="swap-horizontal" size={16} color="#FF4C29" />
-            <Text className="ml-2 text-xs font-semibold text-gray-500 uppercase">Trade Negotiation</Text>
+          <Ionicons name="swap-horizontal" size={16} color="#FF4C29" />
+          <Text className="ml-2 text-xs font-semibold text-gray-500 uppercase">Trade Negotiation</Text>
         </View>
         <View className="flex-row gap-2">
-            {trade.status === 'pending' && !isInitiator && (
-                <>
-                    <TouchableOpacity 
-                        onPress={() => updateStatus({ id: tradeId, status: 'accepted' })}
-                        className="bg-secondary px-3 py-1 rounded-lg"
-                    >
-                        <Text className="text-white font-bold text-xs">Accept</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity 
-                         onPress={() => updateStatus({ id: tradeId, status: 'cancelled' })}
-                         className="bg-gray-200 px-3 py-1 rounded-lg"
-                    >
-                        <Text className="text-gray-600 font-bold text-xs">Reject</Text>
-                    </TouchableOpacity>
-                </>
-            )}
-            {trade.status === 'accepted' && (
-                <TouchableOpacity 
-                    onPress={() => updateStatus({ id: tradeId, status: 'completed' })}
-                    className="bg-primary px-3 py-1 rounded-lg"
-                >
-                    <Text className="text-white font-bold text-xs">Complete Trade</Text>
-                </TouchableOpacity>
-            )}
+          {trade.status === 'pending' && !isInitiator && (
+            <>
+              <TouchableOpacity 
+                onPress={() => updateStatus({ id: tradeId, status: 'accepted' })}
+                className="bg-secondary px-3 py-1 rounded-lg"
+              >
+                <Text className="text-white font-bold text-xs">Accept</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                onPress={() => updateStatus({ id: tradeId, status: 'cancelled' })}
+                className="bg-gray-200 px-3 py-1 rounded-lg"
+              >
+                <Text className="text-gray-600 font-bold text-xs">Reject</Text>
+              </TouchableOpacity>
+            </>
+          )}
+          {trade.status === 'accepted' && (
+            <TouchableOpacity 
+              onPress={() => updateStatus({ id: tradeId, status: 'completed' })}
+              className="bg-primary px-3 py-1 rounded-lg"
+            >
+              <Text className="text-white font-bold text-xs">Complete Trade</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
+      {/* Messages List */}
       <ScrollView 
         ref={scrollViewRef}
         className="flex-1 px-6 pt-4"
@@ -117,18 +118,24 @@ export default function ChatScreen() {
       >
         {/* Item Preview */}
         <View className="bg-white border border-gray-100 rounded-3xl p-4 mb-8 flex-row items-center shadow-sm">
-           <Image source={{ uri: (isInitiator ? trade.receiverItems[0]?.images[0] : trade.initiatorItems[0]?.images[0]) || 'https://placehold.co/100x100' }} className="w-16 h-16 rounded-xl" />
-           <View className="ml-4 flex-1">
-              <Text className="text-xs text-gray-400 font-bold uppercase">Trading for</Text>
-              <Text className="text-base font-bold text-gray-800" numberOfLines={1}>
-                {isInitiator ? trade.receiverItems[0]?.title : trade.initiatorItems[0]?.title}
-              </Text>
-           </View>
-           <View className="bg-secondary/10 px-3 py-1 rounded-lg">
-                <Text className="text-secondary font-bold text-xs">
-                    {isInitiator ? trade.receiverItems[0]?.estimatedValue : trade.initiatorItems[0]?.estimatedValue} TP
-                </Text>
-           </View>
+          <View className="w-16 h-16 rounded-xl bg-gray-50 items-center justify-center overflow-hidden p-1">
+            <Image 
+              source={{ uri: (isInitiator ? trade.receiverItems[0]?.images[0] : trade.initiatorItems[0]?.images[0]) || 'https://placehold.co/100x100' }} 
+              className="w-full h-full" 
+              resizeMode="contain"
+            />
+          </View>
+          <View className="ml-4 flex-1">
+            <Text className="text-xs text-gray-400 font-bold uppercase">Trading for</Text>
+            <Text className="text-base font-bold text-gray-800" numberOfLines={1}>
+              {isInitiator ? trade.receiverItems[0]?.title : trade.initiatorItems[0]?.title}
+            </Text>
+          </View>
+          <View className="bg-secondary/10 px-3 py-1 rounded-lg">
+            <Text className="text-secondary font-bold text-xs">
+              {isInitiator ? trade.receiverItems[0]?.estimatedValue : trade.initiatorItems[0]?.estimatedValue} TP
+            </Text>
+          </View>
         </View>
 
         {messages.map((msg: any) => (
@@ -152,31 +159,34 @@ export default function ChatScreen() {
             </View>
           </View>
         ))}
-        <View className="h-10" />
+        {/* Bottom padding so last message is above input */}
+        <View className="h-24" />
       </ScrollView>
 
-      {/* Input */}
-      <View className="p-6 pt-2 border-t border-gray-50 flex-row gap-3 items-center">
-        <TouchableOpacity className="w-12 h-12 bg-gray-100 rounded-2xl items-center justify-center">
+      {/* Sticky Input Bar — always stays above the keyboard on both iOS and Android */}
+      <KeyboardStickyView offset={{ closed: 0, opened: 0 }}>
+        <View className="p-4 pt-2 border-t border-gray-50 flex-row gap-3 items-center bg-white">
+          <TouchableOpacity className="w-12 h-12 bg-gray-100 rounded-2xl items-center justify-center">
             <Ionicons name="add" size={24} color="#7C7C7C" />
-        </TouchableOpacity>
-        <View className="flex-1 bg-gray-100 rounded-2xl px-4 py-3">
-          <TextInput
-            placeholder="Write a message"
-            className="text-base"
-            value={message}
-            onChangeText={setMessage}
-            multiline
-          />
-        </View>
-        <TouchableOpacity 
+          </TouchableOpacity>
+          <View className="flex-1 bg-gray-100 rounded-2xl px-4 py-3">
+            <TextInput
+              placeholder="Write a message"
+              className="text-base"
+              value={message}
+              onChangeText={setMessage}
+              multiline
+            />
+          </View>
+          <TouchableOpacity 
             onPress={handleSend}
             disabled={!message.trim()}
             className={`w-12 h-12 rounded-2xl items-center justify-center ${message.trim() ? 'bg-primary' : 'bg-gray-200'}`}
-        >
-          <Ionicons name="send" size={20} color="white" />
-        </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
+          >
+            <Ionicons name="send" size={20} color="white" />
+          </TouchableOpacity>
+        </View>
+      </KeyboardStickyView>
+    </View>
   );
 }

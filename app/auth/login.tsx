@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, Image, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthActions } from "@convex-dev/auth/react";
 import CustomModal from '@/components/CustomModal';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -41,11 +42,12 @@ export default function LoginScreen() {
   };
 
   return (
-    <KeyboardAvoidingView 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1 bg-white"
+    <KeyboardAwareScrollView
+      bottomOffset={24}
+      contentContainerStyle={{ flexGrow: 1 }}
+      style={{ flex: 1, backgroundColor: 'white' }}
     >
-      <View className="flex-1 p-6 justify-center">
+      <View className="flex-1 p-6 justify-center" style={{ paddingTop: 80, paddingBottom: 40 }}>
         <Image 
           source={require('../../assets/images/icon.png')} 
           className="w-20 h-20 mb-6 rounded-2xl"
@@ -105,6 +107,6 @@ export default function LoginScreen() {
         type={modalType}
         onClose={() => setModalVisible(false)}
       />
-    </KeyboardAvoidingView>
+    </KeyboardAwareScrollView>
   );
 }

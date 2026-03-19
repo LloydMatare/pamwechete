@@ -2,11 +2,12 @@ import { useMutation } from 'convex/react';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { ActivityIndicator, Alert, Image, ScrollView, Text, TextInput, TouchableOpacity, View, KeyboardAvoidingView, Platform } from 'react-native';
+import { ActivityIndicator, Image, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { api } from '../convex/_generated/api';
 import { Ionicons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system/legacy';
 import CustomModal from '@/components/CustomModal';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
 const CONDITIONS = ['New', 'Like New', 'Good', 'Fair'];
 const CATEGORIES = ['Agriculture', 'Electronics', 'Clothing', 'Livestock', 'Home', 'Services'];
@@ -29,7 +30,10 @@ export default function CreateListingScreen() {
 
   const pickImage = async () => {
     if (images.length >= 5) {
-      Alert.alert('Limit Reached', 'You can only upload up to 5 images.');
+      setModalTitle('Limit Reached');
+      setModalMessage('You can only upload up to 5 images.');
+      setModalType('error');
+      setModalVisible(true);
       return;
     }
 
@@ -123,11 +127,12 @@ export default function CreateListingScreen() {
   };
 
   return (
-    <KeyboardAvoidingView 
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      style={{ flex: 1, backgroundColor: 'white' }}
-    >
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+    <View style={{ flex: 1, backgroundColor: 'white' }}>
+      <KeyboardAwareScrollView
+        bottomOffset={80}
+        style={{ flex: 1 }}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Header */}
         <View className="pt-14 pb-4 px-6 flex-row items-center border-b border-gray-50">
           <TouchableOpacity onPress={() => router.back()} className="mr-4 w-10 h-10 bg-gray-50 rounded-xl items-center justify-center">
@@ -230,8 +235,7 @@ export default function CreateListingScreen() {
           
           <View className="h-32" />
         </View>
-      </ScrollView>
-
+      </KeyboardAwareScrollView>
       {/* Floating Action Button */}
       <View className="absolute bottom-10 left-6 right-6">
         <TouchableOpacity
@@ -256,6 +260,6 @@ export default function CreateListingScreen() {
         type={modalType}
         onClose={() => setModalVisible(false)}
       />
-    </KeyboardAvoidingView>
+    </View>
   );
 }
