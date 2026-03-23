@@ -12,6 +12,7 @@ export default function AccountScreen() {
   const router = useRouter();
   const user = useQuery(api.users.current);
   const userItems = useQuery(api.items.getByUser, { userId: user?._id });
+  const tradeBalance = useQuery(api.users.getTradeBalance, {});
   const seed = useMutation(api.items.seed);
   const { signOut } = useAuthActions();
   const handleLogout = async () => {
@@ -151,11 +152,16 @@ export default function AccountScreen() {
             <Text className="text-sm font-semibold text-gray-400 mb-4 uppercase tracking-widest">Account Details</Text>
             
             {[
-              { icon: 'wallet-outline', label: 'Trade Balance', value: '450 TP' },
+              { icon: 'wallet-outline', label: 'Trade Balance', value: `${tradeBalance || 0} TP` },
+              { icon: 'heart-outline', label: 'Saved Items', value: '', href: '/saved' },
               { icon: 'shield-checkmark-outline', label: 'Verification Status', value: user.verificationLevel },
               { icon: 'location-outline', label: 'Delivery Address', value: user.location?.city || 'N/A' }
             ].map((link, i) => (
-              <TouchableOpacity key={i} className="flex-row items-center justify-between py-5 border-b border-gray-50">
+              <TouchableOpacity 
+                key={i} 
+                onPress={() => link.href ? router.push(link.href as any) : null}
+                className="flex-row items-center justify-between py-5 border-b border-gray-50"
+              >
                 <View className="flex-row items-center">
                   <View className="w-10 h-10 bg-gray-50 rounded-xl items-center justify-center mr-4">
                     <Ionicons name={link.icon as any} size={20} color="#7C7C7C" />

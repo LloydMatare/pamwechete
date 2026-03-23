@@ -66,3 +66,22 @@ export const updateProfile = mutation({
     });
   },
 });
+
+/**
+ * Gets the total trade balance (TP) of the user's available items.
+ */
+export const getTradeBalance = query({
+  args: { userId: v.optional(v.id("users")) },
+  handler: async (ctx, args) => {
+    const userId = args.userId ?? (await auth.getUserId(ctx));
+    if (!userId) return 0;
+    
+    const items = await ctx.db
+      .query("items")
+      .withIndex("by_owner", (q) => q.eq("ownerId", userId))
+      .filter((q) => q.eq(q.field("status"), "available"))
+      .collect();
+      
+    return items.reduce((acc, item) => acc + (item.estimatedValue || 0), 0);
+  },
+});

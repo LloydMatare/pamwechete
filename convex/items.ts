@@ -2,6 +2,42 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { auth } from "./auth";
 
+/**
+ * Heuristic to calculate trade value (TP) based on item attributes.
+ * Rate: 1 USD = 2 TP
+ */
+const calculateTradeValue = (category: string, condition: string, year?: number, imagesCount: number = 0) => {
+  const baseUSD: Record<string, number> = {
+    'Agriculture': 300,
+    'Electronics': 500,
+    'Clothing': 50,
+    'Livestock': 600,
+    'Home': 250,
+    'Services': 80,
+  };
+
+  const conditionMult: Record<string, number> = {
+    'New': 1.0,
+    'Like New': 0.9,
+    'Good': 0.7,
+    'Fair': 0.5,
+  };
+
+  const base = baseUSD[category] || 100;
+  const mult = conditionMult[condition] || 0.7;
+  
+  // Depreciation: 10% per year, min 10% value
+  const currentYear = new Date().getFullYear();
+  const age = year ? Math.max(0, currentYear - year) : 0;
+  const ageFactor = Math.max(0.1, Math.pow(0.9, age));
+
+  // Image bonus: 5% per image, max 25%
+  const imageBonus = 1 + (Math.min(5, imagesCount) * 0.05);
+
+  const estimatedUSD = base * mult * ageFactor * imageBonus;
+  return Math.round(estimatedUSD * 2); // 1 USD = 2 TP
+};
+
 export const create = mutation({
   args: {
     title: v.string(),
@@ -9,6 +45,7 @@ export const create = mutation({
     category: v.string(),
     images: v.array(v.string()),
     condition: v.string(),
+    year: v.optional(v.number()),
     estimatedValue: v.optional(v.number()),
     wants: v.array(v.string()),
     location: v.object({
@@ -35,6 +72,8 @@ export const create = mutation({
       })
     );
 
+    const calculatedValue = calculateTradeValue(args.category, args.condition, args.year, args.images.length);
+
     const itemId = await ctx.db.insert("items", {
       ownerId: userId,
       title: args.title,
@@ -42,7 +81,8 @@ export const create = mutation({
       category: args.category,
       images: imageUrls,
       condition: args.condition,
-      estimatedValue: args.estimatedValue,
+      year: args.year,
+      estimatedValue: args.estimatedValue || calculatedValue,
       wants: args.wants,
       tags: [], // Will be populated by AI in Phase 3
       location: args.location,
@@ -122,6 +162,7 @@ export const seed = mutation({
         category: "Electronics",
         images: ["https://images.unsplash.com/photo-1509391366360-2e959784a276?q=80&w=400&auto=format&fit=crop"],
         condition: "Good",
+        year: 2022,
         estimatedValue: 150,
         wants: ["Livestock", "Grain"],
         location: { city: "Harare", coordinates: { lat: -17.8252, lng: 31.0335 }, displayPrecise: false },
@@ -132,6 +173,7 @@ export const seed = mutation({
         category: "Livestock",
         images: ["https://images.unsplash.com/photo-1546445317-29f4545e9d53?q=80&w=400&auto=format&fit=crop"],
         condition: "New",
+        year: 2023,
         estimatedValue: 450,
         wants: ["Solar Equipment", "Irrigation Pipes"],
         location: { city: "Bulawayo", coordinates: { lat: -20.1465, lng: 28.5703 }, displayPrecise: false },
@@ -142,6 +184,7 @@ export const seed = mutation({
         category: "Agriculture",
         images: ["https://images.unsplash.com/photo-1589335640105-eb654a350101?q=80&w=400&auto=format&fit=crop"],
         condition: "Like New",
+        year: 2021,
         estimatedValue: 300,
         wants: ["Fertilizer", "Seeds"],
         location: { city: "Mutare", coordinates: { lat: -18.9727, lng: 32.6695 }, displayPrecise: false },
@@ -152,6 +195,7 @@ export const seed = mutation({
         category: "Agriculture",
         images: ["https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?q=80&w=400&auto=format&fit=crop"],
         condition: "New",
+        year: 2024,
         estimatedValue: 50,
         wants: ["Groceries", "Clothing"],
         location: { city: "Gweru", coordinates: { lat: -19.4524, lng: 29.8167 }, displayPrecise: false },

@@ -57,6 +57,7 @@ export default defineSchema({
     viewCount: v.number(),
     createdAt: v.number(),
     expiresAt: v.optional(v.number()),
+    year: v.optional(v.number()),
   }).index("by_owner", ["ownerId"]),
 
   trades: defineTable({

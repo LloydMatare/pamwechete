@@ -49,6 +49,7 @@ export default function TabLayout() {
         options={{
           title: 'Saved',
           tabBarIcon: ({ color }) => <TabBarIcon name="heart-outline" color={color} />,
+          href: null,
         }}
       />
       <Tabs.Screen

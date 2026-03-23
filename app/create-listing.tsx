@@ -20,7 +20,7 @@ export default function CreateListingScreen() {
   const [category, setCategory] = useState('');
   const [condition, setCondition] = useState('');
   const [wants, setWants] = useState('');
-  const [estimatedValue, setEstimatedValue] = useState('');
+  const [year, setYear] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
@@ -97,8 +97,8 @@ export default function CreateListingScreen() {
         description,
         category,
         condition,
+        year: parseInt(year) || undefined,
         images: storageIds,
-        estimatedValue: parseFloat(estimatedValue) || 0,
         wants: wants.split(',').map(s => s.trim()).filter(s => s.length > 0),
         location: {
           city: "Harare", 
@@ -203,6 +203,15 @@ export default function CreateListingScreen() {
             ))}
           </View>
 
+          <Text className="text-sm font-semibold text-gray-700 mb-2">Manufacturing Year</Text>
+          <TextInput
+            className="border border-gray-200 rounded-lg p-3 mb-4"
+            placeholder="e.g. 2022"
+            keyboardType="numeric"
+            value={year}
+            onChangeText={setYear}
+          />
+
           <Text className="text-sm font-semibold text-gray-700 mb-2">Description</Text>
           <TextInput
             className="border border-gray-200 rounded-lg p-3 mb-4 h-24"
@@ -221,16 +230,12 @@ export default function CreateListingScreen() {
             onChangeText={setWants}
           />
 
-          <Text className="text-sm font-semibold text-gray-700 mb-2">Estimated Value (TP)</Text>
-          <View className="flex-row items-center border border-gray-200 rounded-lg p-3 mb-8 bg-gray-50">
-            <TextInput
-              className="flex-1 text-lg font-semibold"
-              placeholder="e.g. 150"
-              keyboardType="numeric"
-              value={estimatedValue}
-              onChangeText={setEstimatedValue}
-            />
-            <Text className="text-gray-400 font-bold ml-2">TP</Text>
+          <View className="bg-primary/5 p-6 rounded-3xl border border-primary/20 mb-8 items-center">
+            <Ionicons name="sparkles" size={24} color="#FF4C29" />
+            <Text className="text-lg font-bold text-gray-900 mt-2">Auto-Value Enabled</Text>
+            <Text className="text-gray-500 text-center mt-1">
+              Your trade value (TP) will be automatically calculated based on condition, year, and category at a rate of 1 USD = 2 TP.
+            </Text>
           </View>
           
           <View className="h-32" />
