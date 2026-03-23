@@ -9,7 +9,6 @@ import { TabBar, TabView } from 'react-native-tab-view';
 import { api } from '../convex/_generated/api';
 import { useAuthActions } from "@convex-dev/auth/react";
 import CustomModal from '@/components/CustomModal';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
 // Step 1: Profile Details (Name, Email, City)
 const ProfileRoute = ({ form, setForm, next }: any) => {
@@ -279,11 +278,7 @@ export default function OnboardingScreen() {
   };
 
   return (
-    <KeyboardAwareScrollView
-      bottomOffset={24}
-      style={{ flex: 1, backgroundColor: 'white' }}
-      scrollEnabled={false}
-    >
+    <View style={{ flex: 1, backgroundColor: 'white' }}>
       <View className="pt-16 pb-2 px-6 bg-white flex-row justify-between items-end">
         <View className="flex-row items-center">
           <Image 
@@ -303,23 +298,25 @@ export default function OnboardingScreen() {
           <Text className="text-primary font-bold">Log in</Text>
         </TouchableOpacity>
       </View>
-      <TabView
-        navigationState={{ index, routes }}
-        renderScene={renderScene}
-        onIndexChange={setIndex}
-        initialLayout={{ width: layout.width }}
-        renderTabBar={props => (
-          <TabBar
-            {...props}
-            scrollEnabled
-            indicatorStyle={{ backgroundColor: '#FF4C29', height: 3, borderRadius: 3 }}
-            style={{ backgroundColor: 'white', elevation: 0, shadowOpacity: 0, borderBottomWidth: 1, borderBottomColor: '#F2F3F2' }}
-            activeColor="#FF4C29"
-            inactiveColor="#ABB3BB"
-            tabStyle={{ width: 120 }}
-          />
-        )}
-      />
+      <View style={{ flex: 1 }}>
+        <TabView
+          navigationState={{ index, routes }}
+          renderScene={renderScene}
+          onIndexChange={setIndex}
+          initialLayout={{ width: layout.width }}
+          renderTabBar={props => (
+            <TabBar
+              {...props}
+              scrollEnabled
+              indicatorStyle={{ backgroundColor: '#FF4C29', height: 3, borderRadius: 3 }}
+              style={{ backgroundColor: 'white', elevation: 0, shadowOpacity: 0, borderBottomWidth: 1, borderBottomColor: '#F2F3F2' }}
+              activeColor="#FF4C29"
+              inactiveColor="#ABB3BB"
+              tabStyle={{ width: 120 }}
+            />
+          )}
+        />
+      </View>
       <CustomModal 
         visible={modalVisible}
         title={modalTitle}
@@ -327,6 +324,6 @@ export default function OnboardingScreen() {
         type={modalType}
         onClose={() => setModalVisible(false)}
       />
-    </KeyboardAwareScrollView>
+    </View>
   );
 }

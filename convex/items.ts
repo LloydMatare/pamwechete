@@ -225,3 +225,31 @@ export const remove = mutation({
     await ctx.db.delete(args.id);
   },
 });
+
+export const getSimilar = query({
+  args: { 
+    itemId: v.id("items"), 
+    category: v.string(),
+    limit: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx);
+    
+    // Find items in same category, exclude current item
+    const items = await ctx.db
+      .query("items")
+      .filter((q) => 
+        q.and(
+          q.eq(q.field("category"), args.category),
+          q.neq(q.field("_id"), args.itemId),
+          q.eq(q.field("status"), "available")
+        )
+      )
+      .take(args.limit);
+
+    // Filter out user's own items if logged in
+    return userId 
+      ? items.filter(item => item.ownerId !== userId)
+      : items;
+  },
+});

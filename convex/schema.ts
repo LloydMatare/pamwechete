@@ -90,4 +90,13 @@ export default defineSchema({
     content: v.string(),
     createdAt: v.number(),
   }).index("by_trade", ["tradeId"]),
+  
+  favorites: defineTable({
+    userId: v.id("users"),
+    itemId: v.id("items"),
+    createdAt: v.number(),
+  })
+  .index("by_user", ["userId"])
+  .index("by_item", ["itemId"])
+  .index("by_user_item", ["userId", "itemId"]),
 });

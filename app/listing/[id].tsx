@@ -18,6 +18,23 @@ export default function ListingDetailScreen() {
   const item = useQuery(api.items.get, { id: itemId });
   const createTrade = useMutation(api.trades.create);
   
+  const isFavorite = useQuery(api.favorites.isFavorite, { itemId });
+  const toggleFavorite = useMutation(api.favorites.toggle);
+  const owner = useQuery(api.users.get, { id: item?.ownerId });
+  const similarItems = useQuery(api.items.getSimilar, { 
+    itemId, 
+    category: item?.category || '', 
+    limit: 6 
+  });
+
+  const handleToggleFavorite = async () => {
+    if (!user) {
+      router.replace('/onboarding');
+      return;
+    }
+    await toggleFavorite({ itemId });
+  };
+  
   const handleProposeTrade = async () => {
     if (!user) {
       router.replace('/onboarding');
@@ -88,9 +105,14 @@ export default function ListingDetailScreen() {
             <Ionicons name="arrow-back" size={24} color="black" />
           </TouchableOpacity>
           <TouchableOpacity 
+            onPress={handleToggleFavorite}
             className="w-12 h-12 bg-white/80 rounded-2xl items-center justify-center shadow-sm"
           >
-            <Ionicons name="heart-outline" size={24} color="black" />
+            <Ionicons 
+              name={isFavorite ? "heart" : "heart-outline"} 
+              size={24} 
+              color={isFavorite ? "#FF4C29" : "black"} 
+            />
           </TouchableOpacity>
         </View>
 
@@ -125,6 +147,28 @@ export default function ListingDetailScreen() {
             </View>
           </View>
 
+          {/* Seller Section */}
+          <View className="mb-8 p-6 bg-gray-50 rounded-[32px] border border-gray-100">
+            <Text className="text-xs text-gray-400 font-bold uppercase mb-4 tracking-widest">About the Seller</Text>
+            <View className="flex-row items-center justify-between">
+              <View className="flex-row items-center">
+                <View className="w-12 h-12 bg-primary/10 rounded-full items-center justify-center">
+                  <Text className="text-primary font-bold text-lg">{owner?.name?.charAt(0) || 'U'}</Text>
+                </View>
+                <View className="ml-4">
+                  <Text className="font-bold text-lg text-gray-900">{owner?.name || "User"}</Text>
+                  <View className="flex-row items-center">
+                    <Ionicons name="star" size={14} color="#FFB000" />
+                    <Text className="text-gray-500 text-sm ml-1 font-semibold">{owner?.profile?.rating || 5.0} • {owner?.profile?.tradesCompleted || 0} trades</Text>
+                  </View>
+                </View>
+              </View>
+              <TouchableOpacity className="bg-white px-4 py-2 rounded-xl border border-gray-100">
+                <Text className="text-gray-900 font-bold">View Profile</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
           {/* Description */}
           <Text className="text-xl font-bold mb-3">Description</Text>
           <Text className="text-gray-500 leading-6 mb-8">
@@ -133,7 +177,7 @@ export default function ListingDetailScreen() {
 
           {/* Wants */}
           <Text className="text-xl font-bold mb-3">Trading Preferences</Text>
-          <View className="flex-row flex-wrap gap-2 mb-8">
+          <View className="flex-row flex-wrap gap-2 mb-10">
             {item.wants.map((want: string, i: number) => (
               <View key={i} className="bg-[#FF4C29]/5 px-4 py-2 rounded-xl">
                 <Text className="text-primary font-bold">#{want}</Text>
@@ -143,6 +187,32 @@ export default function ListingDetailScreen() {
               <Text className="text-gray-400 italic">No specific preferences mentioned.</Text>
             )}
           </View>
+
+          {/* Similar Items */}
+          {similarItems && similarItems.length > 0 && (
+            <View>
+              <Text className="text-xl font-bold mb-4">Similar Items</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
+                {similarItems.map((similar) => (
+                  <TouchableOpacity 
+                    key={similar._id}
+                    onPress={() => router.push(`/listing/${similar._id}`)}
+                    className="mr-4 w-40 p-4 bg-white border border-gray-100 rounded-3xl"
+                  >
+                    <View className="w-full h-24 bg-gray-50 rounded-2xl overflow-hidden mb-3 p-2 items-center justify-center">
+                      <Image 
+                        source={{ uri: similar.images[0]?.startsWith('http') ? similar.images[0] : 'https://placehold.co/400x400' }} 
+                        className="w-full h-full"
+                        resizeMode="contain"
+                      />
+                    </View>
+                    <Text className="font-bold text-sm text-gray-900" numberOfLines={1}>{similar.title}</Text>
+                    <Text className="text-primary font-black text-sm mt-1">{similar.estimatedValue || 0} TP</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
         </View>
       </ScrollView>
 
