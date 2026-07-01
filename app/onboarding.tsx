@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useMutation } from 'convex/react';
+import { useConvex, useMutation } from 'convex/react';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
@@ -63,26 +63,63 @@ const ProfileRoute = ({ form, setForm, next }: any) => {
 };
 
 // Step 2: Security (Password)
-const SecurityRoute = ({ form, setForm, next }: any) => {
+const SecurityRoute = ({ form, setForm, next, showPassword, setShowPassword, showConfirmPassword, setShowConfirmPassword }: any) => {
+  const passwordsMatch = form.password === form.confirmPassword;
+  const showMismatch = form.confirmPassword.length > 0 && !passwordsMatch;
+
   return (
     <ScrollView className="flex-1 p-6 bg-white">
       <Text className="text-2xl font-bold mb-2 text-black">Security</Text>
       <Text className="text-gray-500 mb-8">Create a password for your account</Text>
 
       <Text className="text-sm font-semibold text-gray-400 mb-2 uppercase tracking-widest">Password</Text>
-      <TextInput
-        className="border-b border-gray-200 p-3 mb-10 text-lg text-black"
-        placeholder="••••••••"
-        secureTextEntry
-        value={form.password}
-        onChangeText={(text) => setForm({ ...form, password: text })}
-      />
+      <View className="flex-row items-center border-b border-gray-200 mb-4">
+        <TextInput
+          className="flex-1 p-3 text-lg text-black"
+          placeholder="••••••••"
+          secureTextEntry={!showPassword}
+          value={form.password}
+          onChangeText={(text) => setForm({ ...form, password: text })}
+        />
+        <TouchableOpacity onPress={() => setShowPassword(!showPassword)} className="p-3">
+          <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={22} color="#ABB3BB" />
+        </TouchableOpacity>
+      </View>
+
+      <Text className="text-sm font-semibold text-gray-400 mb-2 uppercase tracking-widest">Confirm Password</Text>
+      <View className="flex-row items-center border-b border-gray-200 mb-2">
+        <TextInput
+          className="flex-1 p-3 text-lg text-black"
+          placeholder="••••••••"
+          secureTextEntry={!showConfirmPassword}
+          value={form.confirmPassword}
+          onChangeText={(text) => setForm({ ...form, confirmPassword: text })}
+        />
+        <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} className="p-3">
+          <Ionicons name={showConfirmPassword ? "eye-off-outline" : "eye-outline"} size={22} color="#ABB3BB" />
+        </TouchableOpacity>
+      </View>
+
+      {showMismatch && (
+        <View className="flex-row items-center mb-6">
+          <Ionicons name="alert-circle" size={16} color="#EF4444" />
+          <Text className="text-red-500 text-sm ml-1">Passwords do not match</Text>
+        </View>
+      )}
+
+      {!showMismatch && form.password.length > 0 && form.confirmPassword.length > 0 && (
+        <View className="flex-row items-center mb-6">
+          <Ionicons name="checkmark-circle" size={16} color="#22C55E" />
+          <Text className="text-green-500 text-sm ml-1">Passwords match</Text>
+        </View>
+      )}
 
       <TouchableOpacity
-        onPress={next}
-        className="bg-primary p-5 rounded-2xl items-center shadow-lg shadow-primary/30"
+        onPress={passwordsMatch && form.password.length > 0 ? next : undefined}
+        disabled={!passwordsMatch || form.password.length === 0}
+        className={`p-5 rounded-2xl items-center shadow-lg ${passwordsMatch && form.password.length > 0 ? 'bg-primary shadow-primary/30' : 'bg-gray-200'}`}
       >
-        <Text className="text-white font-bold text-lg">Next: Verification</Text>
+        <Text className={`font-bold text-lg ${passwordsMatch && form.password.length > 0 ? 'text-white' : 'text-gray-400'}`}>Next: Verification</Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -195,10 +232,14 @@ export default function OnboardingScreen() {
     email: '',
     city: '',
     password: '',
+    confirmPassword: '',
     idImage: '',
     language: 'English',
     goals: ''
   });
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [routes] = useState([
     { key: 'profile', title: '1. Profile' },
@@ -207,13 +248,30 @@ export default function OnboardingScreen() {
     { key: 'goals', title: '4. Goals' },
   ]);
 
+  const convex = useConvex();
   const generateUploadUrl = useMutation(api.files.generateUploadUrl);
-  const updateProfile = useMutation(api.users.updateProfile);
 
   const handleFinish = async () => {
     if (!form.name || !form.email || !form.password || !form.city) {
       setModalTitle('Missing Details');
       setModalMessage('Please fill in all required fields (Name, Email, Password, and City).');
+      setModalType('error');
+      setModalVisible(true);
+      return;
+    }
+
+    if (form.password !== form.confirmPassword) {
+      setModalTitle('Passwords Do Not Match');
+      setModalMessage('Please make sure both passwords match.');
+      setModalType('error');
+      setModalVisible(true);
+      return;
+    }
+
+    const existingUser = await convex.query(api.users.getByEmail, { email: form.email });
+    if (existingUser) {
+      setModalTitle('Email Already Registered');
+      setModalMessage('An account with this email already exists. Please use a different email or log in.');
       setModalType('error');
       setModalVisible(true);
       return;
@@ -253,8 +311,14 @@ export default function OnboardingScreen() {
       router.replace('/(tabs)');
     } catch (error: any) {
       console.error(error);
-      setModalTitle('Registration Failed');
-      setModalMessage('Could not complete registration. Please try again.');
+      const message = error?.message || '';
+      if (message.includes('already exists')) {
+        setModalTitle('Email Already Registered');
+        setModalMessage('An account with this email already exists. Please use a different email or log in.');
+      } else {
+        setModalTitle('Registration Failed');
+        setModalMessage('Could not complete registration. Please try again.');
+      }
       setModalType('error');
       setModalVisible(true);
     } finally {
@@ -267,7 +331,17 @@ export default function OnboardingScreen() {
       case 'profile':
         return <ProfileRoute form={form} setForm={setForm} next={() => setIndex(1)} />;
       case 'security':
-        return <SecurityRoute form={form} setForm={setForm} next={() => setIndex(2)} />;
+        return (
+          <SecurityRoute
+            form={form}
+            setForm={setForm}
+            next={() => setIndex(2)}
+            showPassword={showPassword}
+            setShowPassword={setShowPassword}
+            showConfirmPassword={showConfirmPassword}
+            setShowConfirmPassword={setShowConfirmPassword}
+          />
+        );
       case 'verify':
         return <VerificationRoute form={form} setForm={setForm} next={() => setIndex(3)} />;
       case 'goals':

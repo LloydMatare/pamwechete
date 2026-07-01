@@ -2,7 +2,7 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import 'react-native-reanimated';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import '../global.css';
@@ -13,29 +13,26 @@ import { ConvexClientProvider } from '@/components/ConvexClientProvider';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export {
-  // Catch any errors thrown by the Layout component.
   ErrorBoundary,
 } from 'expo-router';
 
 export const unstable_settings = {
-  // Ensure that reloading on `/modal` keeps a back button present.
   initialRouteName: '(tabs)',
 };
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
 import { useRouter, useSegments } from 'expo-router';
+import { View } from 'react-native';
+import AnimatedSplashScreen from '@/components/AnimatedSplashScreen';
 
 export default function RootLayout() {
-  const [loaded, error] = useFonts({
-    // Using system fonts for a neutral look
-  });
+  const [loaded, error] = useFonts({});
+  const [showSplash, setShowSplash] = useState(true);
 
   const segments = useSegments();
   const router = useRouter();
 
-  // Expo Router uses Error Boundaries to catch errors in the navigation tree.
   useEffect(() => {
     if (error) throw error;
   }, [error]);
@@ -47,21 +44,28 @@ export default function RootLayout() {
     }
   }, [segments]);
 
-  const checkOnboarding = async () => {
+  const checkOnboarding = useCallback(async () => {
     const completed = await AsyncStorage.getItem('onboarding_completed');
-    // segment[0] can be '(tabs)' or 'onboarding'
-    const isInsideTabs = segments[0] === '(tabs)';
-    
-    if (completed !== 'true' && isInsideTabs) {
-      router.replace('/onboarding');
+    if (completed === 'true') {
+      setShowSplash(false);
     }
-  };
+  }, []);
+
+  const handleSplashFinish = useCallback(() => {
+    setShowSplash(false);
+    router.replace('/onboarding');
+  }, [router]);
 
   if (!loaded) {
     return null;
   }
 
-  return <RootLayoutNav />;
+  return (
+    <View style={{ flex: 1 }}>
+      <RootLayoutNav />
+      {showSplash && <AnimatedSplashScreen onFinish={handleSplashFinish} />}
+    </View>
+  );
 }
 
 import { GestureHandlerRootView } from 'react-native-gesture-handler';

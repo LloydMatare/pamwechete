@@ -73,7 +73,7 @@ export default function AccountScreen() {
               <Text className="text-white/80 text-xs">Member since {user.profile ? new Date(user.profile.memberSince).getFullYear() : 'N/A'}</Text>
             </View>
           </View>
-          <TouchableOpacity className="p-2 bg-white/20 rounded-xl">
+          <TouchableOpacity onPress={() => router.push('/(tabs)/edit-profile')} className="p-2 bg-white/20 rounded-xl">
             <Ionicons name="settings-outline" size={24} color="white" />
           </TouchableOpacity>
         </View>
